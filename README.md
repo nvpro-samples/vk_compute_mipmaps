@@ -88,10 +88,9 @@ the reduction kernel is mipmap-like in that
 * Example shader included for sRGBA8 mipmap generation.
 
 * Non-power-of-2 support, using an
-  [energy conserving 3x3 kernel](./docs/strategy.md.html#generalpipeline);
+  [energy conserving 3x3 kernel](https://nvpro-samples.github.io/vk_compute_mipmaps/docs/strategy.md.html#generalpipeline);
   however, note that this has a
-  [performance cost](./docs/strategy.md.html#generalpipelineperformance/quality-performancetradeoff).
-  <!--TODO correct links to github.io-->
+  [performance cost](https://nvpro-samples.github.io/vk_compute_mipmaps/docs/strategy.md.html#generalpipelineperformance/quality-performancetradeoff).
 
 * Optional macros for performance tuning (e.g. using hardware bilinear
   filtering to replace shader code).
@@ -152,8 +151,7 @@ principles are still applied, with some complications, in the "general
 pipeline", used whenever the fast pipeline is not applicable. In this
 case, threads communicate using shared memory.
 
-<!-- TODO won't work on github.io -->
-[More Details](./docs/strategy.md.html)
+[More Details](https://nvpro-samples.github.io/vk_compute_mipmaps/docs/strategy.md.html)
 
 This table provides RTX 3090 benchmark results, in nanoseconds, for
 sRGBA8 mipmap generation on images of various sizes, to give an idea of
@@ -247,12 +245,10 @@ menu, can be used to
 
 * [Quantify the effects of omitting various optimizations and
   techniques used by the provided mipmap
-  shader](./docs/strategy.md.html#fastpipelineperformance)
+  shader](https://nvpro-samples.github.io/vk_compute_mipmaps/docs/strategy.md.html#fastpipelineperformance)
 
 * [Allow you to benchmark your own custom fast or general pipelines
-  and compare with the provided shader](./docs/alternatives.md.html)
-
-<!-- TODO: Links won't work on github.io -->
+  and compare with the provided shader](https://nvpro-samples.github.io/vk_compute_mipmaps/docs/alternatives.md.html)
 
 The Benchmark results are written in JSON format. When the sample is run in
 Visual Sample, the benchmark results seem to be written to `build/demo_app`
