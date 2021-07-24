@@ -1,0 +1,64 @@
+// Copyright 2021 NVIDIA CORPORATION
+// SPDX-License-Identifier: Apache-2.0
+
+// Shader for filling an srgba8 texture with a color visualization of julia set.
+//
+// Must be dispatched with enough invocations to cover the output image,
+// one work group covers a 16 by 16 tile.
+
+#version 460
+#extension GL_GOOGLE_include_directive : require
+#include "julia.h"
+
+layout(local_size_x=16, local_size_y=16) in;
+
+layout(push_constant) uniform PushConstantBlock
+{
+  JuliaPushConstant pc;
+};
+layout(set=0, binding=0, rgba8ui) uniform writeonly uimage2D outTex;
+
+void mul(in float ar, in float ai, in float br, in float bi, out float cr, out float ci)
+{
+  cr = ar * br - ai * bi;
+  ci = ar * bi + br * ai;
+}
+
+void main()
+{
+  // Bounds check.
+  ivec2 dim = imageSize(outTex);
+  if (gl_GlobalInvocationID.x >= dim.x || gl_GlobalInvocationID.y >= dim.y)
+  {
+    return;
+  }
+
+  // Scale and flip screen coordinate to calculate z_0
+  float zr = gl_GlobalInvocationID.x * pc.scale + pc.offset_real;
+  float zi = gl_GlobalInvocationID.y * -pc.scale + pc.offset_imag;
+
+  int iterations = 0;
+  while (iterations < pc.maxIterations && zr * zr + zi * zi <= 4)
+  {
+    float tmp_r, tmp_i;
+    mul(zr, zi, zr, zi, tmp_r, tmp_i);
+    zr = tmp_r + pc.c_real;
+    zi = tmp_i + pc.c_imag;
+    ++iterations;
+  }
+
+  // Write color based on iteration count. TODO not sRGB correct???
+  uvec4 color;
+  if (iterations < 16)
+  {
+    float scale = (4 + iterations) * (1 / 20.);
+    color       = uvec4(vec4(0, 128, 255, 255) * scale);
+  }
+  else
+  {
+    uint n = uint(127.0 * (iterations - 16) / (pc.maxIterations - iterations));
+    color = uvec4(n, 128 + n/4, 255 - n, 255);
+  }
+  ivec2 pixelCoord = ivec2(gl_GlobalInvocationID.x, gl_GlobalInvocationID.y);
+  imageStore(outTex, pixelCoord, color);
+}

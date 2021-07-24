@@ -1,0 +1,175 @@
+<meta charset="utf-8" lang="en">
+**Pipeline Alternatives -- NVIDIA Vulkan Compute Mipmaps Sample**
+
+<small>Authors: David Zhao Akeley </small>
+
+This document summarizes how you can test alternative fast and general
+pipelines that fit into the `nvpro_pyramid` framework.
+
+
+# Steps
+
+The steps for this are:
+
+* Enable this functionality in CMake.
+
+* Create a new directory in `extras/fast_pipelines` or
+  `extras/general_pipelines`.
+
+* Implement the shader in a new GLSL file in the new directory.
+
+* Add a `.cpp` file implementing the dispatcher function for the
+  pipeline and register the dispatcher by name (to be explained).
+
+* Re-run CMake so that the new `.cpp` file is added to the executable.
+
+* Add the pipeline alternative to the list in `demo_app/mipmap_pipelines.cpp`
+
+
+# CMake
+
+Enable this functionality by running CMake with the
+`PIPELINE_ALTERNATIVES` configuration variable set to `1` or greater.
+
+
+# New Directory
+
+Create a new directory in `extras/fast_pipelines` if implementing
+a fast pipeline alternative, `extras/general_pipelines`
+otherwise.  The directory name becomes the name of the pipeline
+alternative. It is okay if there is a fast pipeline and a general
+pipeline with the same name.
+
+
+# New Shader
+
+In the new directory, create the shader file under the name
+`fast_pipeline_alternative.glsl` or `general_pipeline_alternative.glsl`
+depending on pipeline type. The technical difference between the two
+is that a general pipeline should be able to handle any image size, while
+a fast pipeline does not.
+
+This file must declare the workgroup size and the `void
+nvproPyramidMain()` function. It may use any `NVPRO_PYRAMID_*` macros
+documented in `nvpro_pyramid/nvpro_pyramid.glsl`. (This file
+defines optional macros to fallback values if not
+provided). Additionally, the shader may use these macros (derived from
+`NVPRO_PYRAMID_PUSH_CONSTANT`):
+
+* `NVPRO_PYRAMID_INPUT_LEVEL_`: by convention, the input level for
+  this dispatch.
+
+* `NVPRO_PYRAMID_LEVEL_COUNT_`: by convention, the number of levels to
+  fill for this dispatch.
+
+Note the trailing underscores. If you want to match the style of the
+original shader, use `lowerCamelCase_` style names, with the trailing
+underscore. Furthermore, the fast pipelines use only
+`NVPRO_PYRAMID_REDUCE4` and `NVPRO_PYRAMID_LOAD_REDUCE4`, and no other
+load/reduce macros.  This is documented by
+`nvpro_pyramid/nvpro_pyramid.glsl`, but is not enforced for testing
+alternative fast pipelines.
+
+If you call a macro with a non-trivial expression, be sure to
+parenthesize if needed to avoid precedence errors:
+
+!!! ERROR Wrong
+    `NVPRO_PYRAMID_LOAD_REDUCE4(tileCoord_ + ivec2(2, 0), inputLevel_, sample_);`
+
+    `// Could become sample_ = textureLod(tileCoord_ + ivec(2, 0) / imageSize_, inputLevel_);`
+
+!!! TIP Correct
+    `NVPRO_PYRAMID_LOAD_REDUCE4((tileCoord_ + ivec2(2, 0)), inputLevel_, sample_);`
+
+
+# Dispatcher Function
+
+In the same directory as the shader, create a `.cpp` file that
+
+* Includes `nvpro_pyramid_dispatch_alternative.hpp`.
+
+* Defines a function for recording suitable dispatch commands
+  for the pipeline you implemented. See `nvpro_pyramid_dispatcher_t`
+  in `nvpro_pyramid/nvpro_pyramid_dispatch.hpp` for documentation.
+
+* If the pipeline is a fast pipeline, add the dispatcher function to
+  the global dispatcher map using the macro
+
+  `NVPRO_PYRAMID_ADD_FAST_DISPATCHER(dispatcher name, functionName)`
+
+  The dispatcher name is **not** quoted. Typically, the dispatcher
+  name is the same as the pipeline alternative name (i.e. the
+  directory name) but this is not required.
+
+* If the pipeline is a general pipeline, instead add the dispatcher
+  function using
+
+  `NVPRO_PYRAMID_ADD_GENERAL_DISPATCHER(dispatcher name, functionName)`
+
+Re-run CMake so that this new file is compiled into the
+`vk_compute_mipmaps_demo` executable.
+
+For a very simple example, see
+`extras/fast_pipelines/onelevel/onelevel.cpp`. This dispatches a
+pipeline that only handles an even-sized input image, and generates
+only 1 mip level.
+
+
+# Add Alternative
+
+In `demo_app/mipmap_pipelines.cpp`, add an entry in the
+`pipelineAlternatives[]` array with syntax
+
+``` text
+    { string label for GUI and and benchmark entry,
+      { general pipeline dispatcher name,
+        general pipeline name (defaults to dispatcher name),
+        general pipeline config bits },
+      { fast pipeline dispatcher name,
+        fast pipeline name (defaults to dispatcher name),
+        fast pipeline config bits }}
+```
+
+All parameters, except the label name, can be omitted to use default values.
+
+!!! TIP Useful Config Bits
+    The `srgbSharedBit` is useful for testing correct usage of
+    `NVPRO_PYRAMID_TYPE` vs `NVPRO_PYRAMID_SHARED_TYPE`. Also,
+    hopefully `noBilinearBit` will convince you of the need for
+    `NVPRO_PYRAMID_LOAD_REDUCE4`.
+
+!!! WARNING
+    If the new entry doesn't show up, double check that you've re-run
+    CMake with `-DPIPELINE_ALTERNATIVES=1` (or higher) and that the
+    entry isn't removed by an `#if` directive.
+
+
+# Benchmarking
+
+Once the new pipeline alternative is included in the `pipelineAlternatives`
+list, its results will be included in the benchmark, which can be started
+using the "start benchmark" button in the UI.
+
+!!! TIP Magenta Areas
+    The sample clears all mip levels (except the base level) to magenta
+    before testing the pipeline. This can be used to diagnose shaders that
+    fail to fill certain areas of the output.
+
+    The `-pipeline` and `-o` command line options may be useful for
+    inspecting such issues more closely.
+
+!!! TIP Visual Studio
+    When run from the solution explorer, the JSON benchmark results seem to
+    get written to `build/demo_app`.
+
+!!! NOTE
+    [Remarks on Test Images](./test_images.txt)
+
+<!-- Markdeep: -->
+<link rel="stylesheet" href="style.css?">
+<script> window.markdeepOptions = { tocStyle: "medium" };</script>
+<script src="markdeep.min.js" charset="utf-8"></script>
+<script src="https://developer.nvidia.com/sites/default/files/akamai/gameworks/whitepapers/markdeep.min.js" charset="utf-8"></script>
+<script>
+    window.alreadyProcessedMarkdeep || (document.body.style.visibility = "visible")
+</script>

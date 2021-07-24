@@ -1,0 +1,29 @@
+# Typical Unix cruft
+*~
+\#*
+
+# CMake files (assuming either cmake in . or bin or build dir)
+*.dir
+bin
+build
+CMakeCache.txt
+CMakeFiles
+cmake_install.cmake
+x64
+shared_sources
+nvpro_core
+
+# Unix CMake outputs
+compile_commands.json
+Makefile
+
+# Visual Studio CMake outputs
+.vs
+*.sln
+*.vcxproj*
+
+# Compiled shader code
+*.spv
+
+# nvpro stuff
+log_nvprosample.txt

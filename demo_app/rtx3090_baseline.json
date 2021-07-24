@@ -1,0 +1,66 @@
+{
+"1080p.jpg": {
+  "default":           {"median_ns":  37040, "min_ns":  36100, "max_ns":  40664, "delta":2},
+  "blit":              {"median_ns":  44816, "min_ns":  44264, "max_ns":  50308, "delta":83},
+  "baseline":          {"median_ns":  18852, "min_ns":  18408, "max_ns":  20120, "delta":254}}
+,
+"1440p.jpg": {
+  "default":           {"median_ns":  42892, "min_ns":  42496, "max_ns":  47768, "delta":2},
+  "blit":              {"median_ns":  59600, "min_ns":  59084, "max_ns":  65296, "delta":61},
+  "baseline":          {"median_ns":  28760, "min_ns":  28228, "max_ns":  30384, "delta":255}}
+,
+"4094.jpg": {
+  "default":           {"median_ns": 161776, "min_ns": 160624, "max_ns": 315736, "delta":2},
+  "blit":              {"median_ns": 158300, "min_ns": 157548, "max_ns": 167080, "delta":206},
+  "baseline":          {"median_ns": 106760, "min_ns": 106156, "max_ns": 111456, "delta":255}}
+,
+"4095.jpg": {
+  "default":           {"median_ns": 188044, "min_ns": 186820, "max_ns": 301804, "delta":2},
+  "blit":              {"median_ns": 158480, "min_ns": 157772, "max_ns": 188792, "delta":218},
+  "baseline":          {"median_ns": 107156, "min_ns": 106448, "max_ns": 112020, "delta":255}}
+,
+"4096.jpg": {
+  "default":           {"median_ns": 112916, "min_ns": 112184, "max_ns": 163316, "delta":2},
+  "blit":              {"median_ns": 160544, "min_ns": 159884, "max_ns": 190540, "delta":2},
+  "baseline":          {"median_ns": 106956, "min_ns": 106196, "max_ns": 136488, "delta":255}}
+,
+"4k.jpg": {
+  "default":           {"median_ns":  75736, "min_ns":  75196, "max_ns": 106404, "delta":2},
+  "blit":              {"median_ns":  94516, "min_ns":  93904, "max_ns": 123596, "delta":89},
+  "baseline":          {"median_ns":  57460, "min_ns":  56852, "max_ns":  60912, "delta":254}}
+,
+"alpha1080p.png": {
+  "default":           {"median_ns":  37236, "min_ns":  36224, "max_ns":  40972, "delta":5},
+  "blit":              {"median_ns":  44416, "min_ns":  43820, "max_ns":  49368, "delta":57},
+  "baseline":          {"median_ns":  18964, "min_ns":  18608, "max_ns":  43464, "delta":249}}
+,
+"alpha2048.png": {
+  "default":           {"median_ns":  36236, "min_ns":  35580, "max_ns":  38460, "delta":4},
+  "blit":              {"median_ns":  62884, "min_ns":  62312, "max_ns":  68668, "delta":3},
+  "baseline":          {"median_ns":  31696, "min_ns":  31264, "max_ns":  60328, "delta":255}}
+,
+"alpha2052.png": {
+  "default":           {"median_ns":  45368, "min_ns":  44736, "max_ns":  48616, "delta":4},
+  "blit":              {"median_ns":  63180, "min_ns":  62540, "max_ns":  68980, "delta":98},
+  "baseline":          {"median_ns":  32336, "min_ns":  31900, "max_ns":  34428, "delta":255}}
+,
+"lunch_with_friend.jpg": {
+  "default":           {"median_ns":  36372, "min_ns":  35736, "max_ns":  38788, "delta":2},
+  "blit":              {"median_ns":  62684, "min_ns":  62200, "max_ns":  69588, "delta":2},
+  "baseline":          {"median_ns":  31360, "min_ns":  30936, "max_ns":  33564, "delta":247}}
+,
+"lunch_2047.jpg": {
+  "default":           {"median_ns":  71420, "min_ns":  70824, "max_ns":  80468, "delta":2},
+  "blit":              {"median_ns":  60812, "min_ns":  60196, "max_ns":  66212, "delta":87},
+  "baseline":          {"median_ns":  31608, "min_ns":  31184, "max_ns":  33828, "delta":248}}
+,
+"mandelbrots.png": {
+  "default":           {"median_ns":  57240, "min_ns":  56744, "max_ns":  88532, "delta":2},
+  "blit":              {"median_ns":  54988, "min_ns":  53608, "max_ns":  61724, "delta":67},
+  "baseline":          {"median_ns":  25056, "min_ns":  24612, "max_ns":  53804, "delta":216}}
+,
+"tall.jpg": {
+  "default":           {"median_ns":  51604, "min_ns":  51220, "max_ns":  79816, "delta":2},
+  "blit":              {"median_ns":  67680, "min_ns":  67152, "max_ns":  74380, "delta":200},
+  "baseline":          {"median_ns":  33252, "min_ns":  32716, "max_ns":  36892, "delta":255}}
+}

@@ -1,0 +1,87 @@
+Brief commentary on the various test images used by the benchmark
+utility. Most are designed to test a specific functionality or
+demonstrate a particular need.
+
+
+        1080p.jpg
+
+Matches the typical 1920x1080 screen size; representative of the kind
+of work that may need to be done for screen-space effects.  Tests the
+3-layer case for the fast pipeline, as the image can be evenly divided
+into 8x8 tiles, but not 16x16.
+
+
+        1440p.jpg
+
+2560x1440 image. Tests the 5-layer case for the fast pipeline, as the
+image can be evenly divided into 32x32 tiles but not 64x64.
+
+
+        4094.jpg
+
+Tests the 1-layer case for the fast pipeline (if enabled), as the
+image can be evenly divided into 2x2 tiles but not 4x4.
+
+
+        4095.jpg
+
+Tests the worst case: needs a 3x3 kernel for every reduction.
+
+
+        4096.jpg
+
+Ideal case for showing off the speed of the fast pipeline.
+
+
+        4k.jpg
+
+3840x2160 image. Tests the 4-layer case for the fast pipeline, as the
+image can be evenly divided into 16x16 tiles but not 32x32.
+
+
+        alpha1080p.png
+
+1920x1080 image with transparency. Basically identical to 1080p.jpg as
+far as nvpro_pyramid itself is concerned; however, this is useful for
+demonstrating why premultiplied alpha is needed (this is outside the
+scope of nvpro_pyramid itself, and is handled by NVPRO_PYRAMID_*
+configuration macros and the application).
+
+
+        alpha2048.png
+
+2048x2048 image with transparency.
+
+
+        alpha2052.png
+
+2052x2052 image with transparency. Tests the 2-layer case for the fast
+pipeline, as the image can be evenly divided into 4x4 tiles but not 8x8.
+
+
+        lunch_with_friend.jpg
+
+2048x2048 photo of the real world. The demo doesn't have a way to
+show this, but this is a great image for demonstrating why sRGB-correct
+texture filtering is so important; with a non-sRGB-correct filter,
+you get very ugly "ropey" artifacts from incorrect interpolation.
+
+
+        lunch_2047.jpg
+
+lunch_with_friend.jpg cropped to 2047x2047 (worst case). This shows
+how blitted NP2 mipmaps are ugly in practice (look at the shiny rim of
+the bowl, and compare its appearance between the default and the
+blit mipmap algorithms).
+
+
+        mandelbrots.jpg
+
+Random NP2 case, see how the library performs for a random image size
+that isn't chosen with some underlying purpose.
+
+
+        tall.jpg
+
+Image that is much taller than it is wide, check for any weird logic
+errors in code.
