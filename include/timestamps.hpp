@@ -41,7 +41,7 @@ public:
         ctx.m_physicalInfo.queueProperties[queueFamily].timestampValidBits;
     assert(timestampValidBits >= 36);
     m_timestampMask = timestampValidBits >= 64 ? ~uint64_t(0)
-                                               : uint64_t(1) << timestampValidBits;
+                                               : (uint64_t(1) << timestampValidBits) - 1u;
   }
 
   ~Timestamps()
