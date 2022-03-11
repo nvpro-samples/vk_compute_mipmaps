@@ -12,7 +12,7 @@ file(GLOB SOURCE_FILES *.c *.cpp)
 file(GLOB HEADER_FILES *.h *.hpp ../include/*.h ../include/*.hpp)
 file(GLOB SHADER_FILES ../nvpro_pyramid/*.comp)
 
-target_sources(${PROJNAME} PUBLIC ${SOURCE_FILES} ${HEADER_FILES} ${SHADER_FILES})
+target_sources(${PROJNAME} PUBLIC ${SOURCE_FILES} ${COMMON_SOURCE_FILES} ${HEADER_FILES} ${SHADER_FILES})
 
 #####################################################################################
 # Pre-compiled shaders for this project -> sets SPV_OUTPUT variable

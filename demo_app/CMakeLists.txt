@@ -31,7 +31,7 @@ file(GLOB HEADER_FILES *.h *.hpp ../include/*.h ../include/*.hpp)
 file(GLOB SHADER_FILES ../shaders/*.comp ../shaders/*.vert ../shaders/*.frag ../nvpro_pyramid/*.comp)
 file(GLOB NVPRO_PYRAMID_LIBRARY_FILES ../nvpro_pyramid/*.glsl ../nvpro_pyramid/*.hpp)  # Skip .comp
 
-target_sources(${PROJNAME} PUBLIC ${SOURCE_FILES} ${HEADER_FILES} ${SHADER_FILES} ${NVPRO_PYRAMID_LIBRARY_FILES})
+target_sources(${PROJNAME} PUBLIC ${SOURCE_FILES} ${COMMON_SOURCE_FILES} ${HEADER_FILES} ${SHADER_FILES} ${NVPRO_PYRAMID_LIBRARY_FILES})
 
 #####################################################################################
 # Pre-compiled shaders for this project -> sets SPV_OUTPUT variable
