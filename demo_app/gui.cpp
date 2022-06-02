@@ -198,7 +198,7 @@ void Gui::doMipmapGenerationControls(nvvk::ProfilerVK& vkProfiler)
     {
       labels.push_back(pipelineAlternatives[i].label);
     }
-    ImGui::Combo("", &m_alternativeIdxSetting,
+    ImGui::Combo("##fixesSurprisingImGuiDesign", &m_alternativeIdxSetting,
                  labels.data(), int(labels.size()));
     m_showAllPipelineAlternatives = true;
   }
