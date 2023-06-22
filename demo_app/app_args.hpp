@@ -3,6 +3,7 @@
 #ifndef VK_COMPUTE_MIPMAPS_DEMO_APP_ARGS_HPP_
 #define VK_COMPUTE_MIPMAPS_DEMO_APP_ARGS_HPP_
 
+#include <stdint.h>
 #include <string>
 
 // Arguments for the App.
