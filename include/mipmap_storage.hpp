@@ -14,7 +14,7 @@
 #include <string.h>
 #include <vector>
 
-#include "nvmath/nvmath.h"
+#include <glm/glm.hpp>
 
 #include "shaders/srgb.h"
 
@@ -35,7 +35,7 @@ class MipmapStorage
   std::vector<uint64_t> m_levelOffsets;
 
   // Width and height of each mip level.
-  std::vector<nvmath::vec2ui> m_widthHeight;
+  std::vector<glm::uvec2> m_widthHeight;
 
   void allocateData()
   {
@@ -72,7 +72,7 @@ public:
   }
 
   // Return data at (x, y, mip level)
-  Texel& operator[] (nvmath::vec3ui coord)
+  Texel& operator[] (glm::uvec3 coord)
   {
     allocateData();
     uint32_t x     = coord.x;
@@ -84,14 +84,14 @@ public:
     return m_data[m_levelOffsets[level] + dim.x*y + x];
   }
 
-  const Texel& operator[] (nvmath::vec3ui coord) const
+  const Texel& operator[] (glm::uvec3 coord) const
   {
     assert(!m_data.empty());
     return const_cast<MipmapStorage&>(*this)[coord];
   }
 
   // Get list of mip level width/heights.
-  const std::vector<nvmath::vec2ui>& getWidthHeight() const
+  const std::vector<glm::uvec2>& getWidthHeight() const
   {
     return m_widthHeight;
   }
@@ -141,7 +141,7 @@ public:
   // difference and optionally write out texel coordinate + channel at
   // which that difference was found.
   T compare(const MipmapStorage& other,
-            nvmath::vec3ui*      outCoordinate=nullptr,
+            glm::uvec3*      outCoordinate=nullptr,
             uint32_t*            outChannel=nullptr) const
   {
     assert(m_widthHeight == other.m_widthHeight);
@@ -153,13 +153,13 @@ public:
   // Like above, but compares to the raw data buffer given; assumed
   // to be in same layout as used in MipmapStorage.
   T compare(const void*     pBuffer,
-            nvmath::vec3ui* outCoordinate = nullptr,
+            glm::uvec3* outCoordinate = nullptr,
             uint32_t*       outChannel    = nullptr) const
   {
     assert(!m_data.empty());
     const Texel*   pOtherTexels = static_cast<const Texel*>(pBuffer);
     T              worstDelta{0};
-    nvmath::vec3ui worstCoordinate{0, 0, 0};
+    glm::uvec3 worstCoordinate{0, 0, 0};
     uint32_t       worstChannel = 0;
 
     for (uint32_t level = 1; level != m_levelOffsets.size(); ++level)
@@ -389,7 +389,7 @@ inline void cpuGenerateMipmaps_sRGBA(MipmapStorage<uint8_t, 4>* pMips)
   };
   auto fromLinear = [] (std::array<float, 4> linear) -> std::array<uint8_t, 4>
   {
-    uint8_t alpha = uint8_t(nvmath::nv_clamp(linear[3] * 255.f, 0.f, 255.f));
+    uint8_t alpha = uint8_t(glm::clamp(linear[3] * 255.f, 0.f, 255.f));
     return { uint8_t(srgbFromLinear(linear[0])),
              uint8_t(srgbFromLinear(linear[1])),
              uint8_t(srgbFromLinear(linear[2])), alpha };
@@ -409,7 +409,7 @@ inline std::string testMipmaps(const MipmapStorage<uint8_t, 4>& input)
   memcpy(expected.levelData(0), input.levelData(0), input.getLevelByteSize(0));
   cpuGenerateMipmaps_sRGBA(&expected);
 
-  nvmath::vec3ui worstCoordinate;
+  glm::uvec3 worstCoordinate;
   uint32_t       worstChannel;
   uint8_t        worstDelta = input.compare(
       expected, &worstCoordinate, &worstChannel);

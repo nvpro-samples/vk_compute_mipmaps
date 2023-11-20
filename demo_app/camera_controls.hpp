@@ -28,7 +28,7 @@ struct CameraControls
 
   // 2D camera controls
   // Texel coord is offset + scale * pixelCoordinate.
-  nvmath::vec2 offset, scale = {1, 1};
+  glm::vec2 offset, scale = {1, 1};
 
   // 3D camera controls
   nvh::CameraManipulator::Camera camera;

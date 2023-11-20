@@ -12,7 +12,7 @@
 
 #include "stb_image.h"
 #include "stb_image_write.h"
-#include "nvmath/nvmath.h"
+#include <glm/glm.hpp>
 #include "nvvk/descriptorsets_vk.hpp"
 #include "nvvk/error_vk.hpp"
 #include "nvvk/memallocator_dedicated_vk.hpp"
@@ -476,7 +476,7 @@ public:
   }
 
   uint8_t compareWithStaging(const MipmapStorage<uint8_t, 4>& mips,
-                             nvmath::vec3ui* outCoordinate = nullptr,
+                             glm::uvec3* outCoordinate = nullptr,
                              uint32_t*       outChannel    = nullptr) const
   {
     return mips.compare(m_pStagingBufferMap, outCoordinate, outChannel);

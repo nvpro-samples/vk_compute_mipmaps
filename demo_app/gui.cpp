@@ -4,7 +4,7 @@
 
 #include "nvh/cameramanipulator.hpp"
 #include "nvh/container_utils.hpp"
-#include "nvmath/nvmath.h"
+#include <glm/glm.hpp>
 
 #include "frame_manager.hpp"
 #include "image_names.hpp"
@@ -13,12 +13,7 @@
 #include "shaders/filter_modes.h"
 #include "shaders/scene_modes.h"
 
-void Gui::cmdInit(VkCommandBuffer      cmdBuf,
-                  GLFWwindow*          pWindow,
-                  const nvvk::Context& ctx,
-                  const FrameManager&  frameManager,
-                  VkRenderPass         renderPass,
-                  uint32_t             subpass)
+void Gui::cmdInit(VkCommandBuffer cmdBuf, GLFWwindow* pWindow, const nvvk::Context& ctx, const FrameManager& frameManager, VkRenderPass renderPass, uint32_t subpass)
 {
   m_pWindow = pWindow;
   m_device  = ctx;
@@ -34,7 +29,7 @@ void Gui::cmdInit(VkCommandBuffer      cmdBuf,
   // Special understanding of first two options is hard coded later; careful.
   m_imageMenuOptions.push_back("Select Drawn Image");
   m_imageMenuOptions.push_back("Dynamically-Generated");
-  for (const char* pImageName : imageNameArray)
+  for(const char* pImageName : imageNameArray)
   {
     m_imageMenuOptions.push_back(pImageName);
   }
@@ -47,34 +42,33 @@ void Gui::cmdInit(VkCommandBuffer      cmdBuf,
   ImGuiH::setFonts(ImGuiH::FONT_PROPORTIONAL_SCALED);
   ImGuiH::setStyle(true);
 
-  VkDescriptorPoolSize poolSizes[] = {
-      VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_SAMPLER, 1},
-      VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1},
-      VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1}};
-  VkDescriptorPoolCreateInfo poolInfo = {
-      VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-      nullptr,
-      VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
-      arraySize(poolSizes),
-      arraySize(poolSizes),
-      poolSizes};
+  VkDescriptorPoolSize       poolSizes[] = {VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_SAMPLER, 1},
+                                            VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1},
+                                            VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1}};
+  VkDescriptorPoolCreateInfo poolInfo    = {VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+                                            nullptr,
+                                            VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
+                                            arraySize(poolSizes),
+                                            arraySize(poolSizes),
+                                            poolSizes};
   assert(m_pool == VK_NULL_HANDLE);
   NVVK_CHECK(vkCreateDescriptorPool(ctx, &poolInfo, nullptr, &m_pool));
 
-  ImGui_ImplVulkan_InitInfo info{
-      ctx.m_instance,
-      ctx.m_physicalDevice,
-      ctx.m_device,
-      frameManager.getQueueFamilyIndex(),
-      frameManager.getQueue(),
-      VK_NULL_HANDLE,  // No need for pipeline cache for simple sample.
-      m_pool,
-      subpass,
-      frameManager.getSwapChain().getImageCount(),
-      frameManager.getSwapChain().getImageCount(),
-      VK_SAMPLE_COUNT_1_BIT,
-      nullptr,
-      [](VkResult err) { NVVK_CHECK(err); }};
+  ImGui_ImplVulkan_InitInfo info{ctx.m_instance,
+                                 ctx.m_physicalDevice,
+                                 ctx.m_device,
+                                 frameManager.getQueueFamilyIndex(),
+                                 frameManager.getQueue(),
+                                 VK_NULL_HANDLE,  // No need for pipeline cache for simple sample.
+                                 m_pool,
+                                 subpass,
+                                 frameManager.getSwapChain().getImageCount(),
+                                 frameManager.getSwapChain().getImageCount(),
+                                 VK_SAMPLE_COUNT_1_BIT,
+                                 false,
+                                 VK_FORMAT_UNDEFINED,
+                                 nullptr,
+                                 [](VkResult err) { NVVK_CHECK(err); }};
 
   ImGui_ImplVulkan_Init(&info, renderPass);
   ImGui_ImplVulkan_CreateFontsTexture(cmdBuf);
@@ -84,14 +78,14 @@ void Gui::cmdInit(VkCommandBuffer      cmdBuf,
 
 Gui::~Gui()
 {
-  if (m_device != nullptr)
+  if(m_device != nullptr)
   {
     vkDestroyDescriptorPool(m_device, m_pool, nullptr);
     ImGui_ImplVulkan_DestroyFontUploadObjects();
     ImGui_ImplVulkan_Shutdown();
     ImGui_ImplGlfw_Shutdown();
   }
-  if (m_pWindow != nullptr)
+  if(m_pWindow != nullptr)
   {
     glfwSetWindowUserPointer(m_pWindow, nullptr);
   }
@@ -105,9 +99,9 @@ void Gui::doFrame(nvvk::ProfilerVK& vkProfiler)
   ImGui_ImplGlfw_NewFrame();
   float dpiScale = float(ImGuiH::getDPIScale());
 
-  if (m_guiVisible)
+  if(m_guiVisible)
   {
-    if (m_firstTime)
+    if(m_firstTime)
     {
       ImGui::SetNextWindowPos({0, 0});
       ImGui::SetNextWindowSize({dpiScale * 300, dpiScale * 800});
@@ -116,23 +110,23 @@ void Gui::doFrame(nvvk::ProfilerVK& vkProfiler)
     ImGui::Begin("Toggle UI [u]");
     ImGui::PushItemWidth(ImGui::GetWindowWidth() * 0.5f);
 
-    if (ImGui::CollapsingHeader("Input/Output"))
+    if(ImGui::CollapsingHeader("Input/Output"))
     {
       doInputOutputControls();
     }
-    if (ImGui::CollapsingHeader("Mipmap Generation"))
+    if(ImGui::CollapsingHeader("Mipmap Generation"))
     {
       doMipmapGenerationControls(vkProfiler);
     }
-    if (ImGui::CollapsingHeader("Visualization"))
+    if(ImGui::CollapsingHeader("Visualization"))
     {
       doVisualizationControls();
     }
-    if (ImGui::CollapsingHeader("Frame Performance"))
+    if(ImGui::CollapsingHeader("Frame Performance"))
     {
       doFramePerformanceControls(vkProfiler);
     }
-    if (ImGui::CollapsingHeader("Tools"))
+    if(ImGui::CollapsingHeader("Tools"))
     {
       doToolsControls();
     }
@@ -155,29 +149,28 @@ void Gui::updateCamera()
 void Gui::doInputOutputControls()
 {
   int showImageIdx = 0;
-  ImGui::Combo(" " /* breaks if empty string */, &showImageIdx,
-               m_imageMenuOptions.data(), int(m_imageMenuOptions.size()));
-  if (showImageIdx == 1)
+  ImGui::Combo(" " /* breaks if empty string */, &showImageIdx, m_imageMenuOptions.data(), int(m_imageMenuOptions.size()));
+  if(showImageIdx == 1)
   {
     m_wantLoadImageFilename = "";
   }
-  else if (showImageIdx != 0)
+  else if(showImageIdx != 0)
   {
     m_wantLoadImageFilename = imageNameArray[showImageIdx - 2];
   }
 
   ImGui::SameLine();
-  if (ImGui::Button("Open File [o]"))
+  if(ImGui::Button("Open File [o]"))
   {
     doOpenImageFileDialog();
   }
 
-  if (ImGui::Button("Write Generated Mipmaps [w]"))
+  if(ImGui::Button("Write Generated Mipmaps [w]"))
   {
     doSaveImageFileDialog();
   }
 
-  if (m_drawingDynamicImage)
+  if(m_drawingDynamicImage)
   {
     ImGui::SliderInt("width", &m_imageWidth, 1, 32768);
     ImGui::SliderInt("height", &m_imageHeight, 1, 32768);
@@ -191,41 +184,38 @@ void Gui::doInputOutputControls()
 
 void Gui::doMipmapGenerationControls(nvvk::ProfilerVK& vkProfiler)
 {
-  if (m_showAllPipelineAlternatives || m_alternativeIdxSetting >= 2)
+  if(m_showAllPipelineAlternatives || m_alternativeIdxSetting >= 2)
   {
     std::vector<const char*> labels;
-    for (size_t i = 0; i < pipelineAlternativeCount; ++i)
+    for(size_t i = 0; i < pipelineAlternativeCount; ++i)
     {
       labels.push_back(pipelineAlternatives[i].label);
     }
-    ImGui::Combo("##fixesSurprisingImGuiDesign", &m_alternativeIdxSetting,
-                 labels.data(), int(labels.size()));
+    ImGui::Combo("##fixesSurprisingImGuiDesign", &m_alternativeIdxSetting, labels.data(), int(labels.size()));
     m_showAllPipelineAlternatives = true;
   }
   else
   {
-    ImGui::RadioButton("nvpro_pyramid", &m_alternativeIdxSetting,
-                       defaultPipelineAlternativeIdx);
+    ImGui::RadioButton("nvpro_pyramid", &m_alternativeIdxSetting, defaultPipelineAlternativeIdx);
     ImGui::SameLine();
-    ImGui::RadioButton("blit", &m_alternativeIdxSetting,
-                       blitPipelineAlternativeIdx);
+    ImGui::RadioButton("blit", &m_alternativeIdxSetting, blitPipelineAlternativeIdx);
     ImGui::SameLine();
     int showMore = 0;
     ImGui::RadioButton("more...", &showMore, 1);
-    if (PIPELINE_ALTERNATIVES && showMore)
+    if(PIPELINE_ALTERNATIVES && showMore)
     {
       m_showAllPipelineAlternatives = true;
     }
-    if (!PIPELINE_ALTERNATIVES && ImGui::IsItemHovered())
+    if(!PIPELINE_ALTERNATIVES && ImGui::IsItemHovered())
       ImGui::SetTooltip("Note: Re-run CMake with -DPIPELINE_ALTERNATIVES=1");
   }
   showCpuGpuTime(vkProfiler, "mipmaps", "Mipmap Generation");
-  auto& points = m_mipmapGpuRuntimeHistory;
+  auto&                    points = m_mipmapGpuRuntimeHistory;
   nvh::Profiler::TimerInfo timerInfo{};
   vkProfiler.getTimerInfo("mipmaps", timerInfo);
   float gpu_ms = float(timerInfo.gpu.average * 0.001);
   points.push_back(gpu_ms);
-  if (points.size() > 256)
+  if(points.size() > 256)
     points.erase(points.begin());  // Forget oldest sample
   ImGui::PlotLines("GPU Time History", points.data(), int(points.size()));
 }
@@ -235,25 +225,23 @@ void Gui::doVisualizationControls()
   // Filter Mode and LoD controls.
   // These have no effect in "show all mips" scene mode, so to avoid confusion,
   // implicitly exit that mode if these controls are used.
-  if (m_cam.sceneMode == VK_COMPUTE_MIPMAPS_SCENE_MODE_SHOW_ALL_MIPS)
+  if(m_cam.sceneMode == VK_COMPUTE_MIPMAPS_SCENE_MODE_SHOW_ALL_MIPS)
   {
     int filterMode = VK_COMPUTE_MIPMAPS_FILTER_MODE_COUNT;
-    ImGui::Combo("Filter Mode [f]", &filterMode, filterModeLabels,
-                 VK_COMPUTE_MIPMAPS_FILTER_MODE_COUNT + 1);
-    if (filterMode != VK_COMPUTE_MIPMAPS_FILTER_MODE_COUNT)
+    ImGui::Combo("Filter Mode [f]", &filterMode, filterModeLabels, VK_COMPUTE_MIPMAPS_FILTER_MODE_COUNT + 1);
+    if(filterMode != VK_COMPUTE_MIPMAPS_FILTER_MODE_COUNT)
     {
       m_cam.filterMode = filterMode;
-      m_cam.sceneMode = VK_COMPUTE_MIPMAPS_SCENE_MODE_2D_NOT_TILED;
+      m_cam.sceneMode  = VK_COMPUTE_MIPMAPS_SCENE_MODE_2D_NOT_TILED;
     }
   }
   else
   {
-    ImGui::Combo("Filter Mode [f]", &m_cam.filterMode, filterModeLabels,
-                 VK_COMPUTE_MIPMAPS_FILTER_MODE_COUNT);
+    ImGui::Combo("Filter Mode [f]", &m_cam.filterMode, filterModeLabels, VK_COMPUTE_MIPMAPS_FILTER_MODE_COUNT);
   }
-  float newLod = m_cam.explicitLod;
+  float newLod     = m_cam.explicitLod;
   float upperBound = std::max(m_maxExplicitLod, 0.0001f);
-  if (m_cam.filterMode == VK_COMPUTE_MIPMAPS_FILTER_MODE_NEAREST_EXPLICIT_LOD)
+  if(m_cam.filterMode == VK_COMPUTE_MIPMAPS_FILTER_MODE_NEAREST_EXPLICIT_LOD)
   {
     int intLod = int(roundf(newLod));
     ImGui::SliderInt("Explicit LoD", &intLod, 0, int(upperBound));
@@ -263,16 +251,16 @@ void Gui::doVisualizationControls()
   {
     ImGui::SliderFloat("Explicit LoD", &newLod, 0.0f, upperBound);
   }
-  if (newLod != m_cam.explicitLod)
+  if(newLod != m_cam.explicitLod)
   {
-    if (m_cam.filterMode == VK_COMPUTE_MIPMAPS_FILTER_MODE_TRILINEAR)
+    if(m_cam.filterMode == VK_COMPUTE_MIPMAPS_FILTER_MODE_TRILINEAR)
       m_cam.filterMode = VK_COMPUTE_MIPMAPS_FILTER_MODE_TRILINEAR_EXPLICIT_LOD;
-    if (m_cam.sceneMode == VK_COMPUTE_MIPMAPS_SCENE_MODE_SHOW_ALL_MIPS)
+    if(m_cam.sceneMode == VK_COMPUTE_MIPMAPS_SCENE_MODE_SHOW_ALL_MIPS)
       m_cam.sceneMode = VK_COMPUTE_MIPMAPS_SCENE_MODE_2D_NOT_TILED;
   }
   m_cam.explicitLod = newLod;
 
-  if (m_cam.sceneMode == VK_COMPUTE_MIPMAPS_SCENE_MODE_3D)
+  if(m_cam.sceneMode == VK_COMPUTE_MIPMAPS_SCENE_MODE_3D)
   {
     float fov = m_cameraManipulator.getFov();
     ImGui::SliderFloat("FOV", &fov, 1, 170);
@@ -280,26 +268,25 @@ void Gui::doVisualizationControls()
   }
   else
   {
-    if (ImGui::Button("Reset Position (1:1 zoom)"))
+    if(ImGui::Button("Reset Position (1:1 zoom)"))
     {
       m_cam.offset = {0, 0};
       m_cam.scale  = {1, 1};
     }
     ImGui::SameLine();
-    if (ImGui::Button("Fit Image"))
+    if(ImGui::Button("Fit Image"))
     {
       m_wantFitImageToScreen = true;
     }
   }
   auto oldSceneMode = m_cam.sceneMode;
-  ImGui::Combo("Scene [s]", &m_cam.sceneMode, sceneModeLabels,
-               VK_COMPUTE_MIPMAPS_SCENE_MODE_COUNT);
+  ImGui::Combo("Scene [s]", &m_cam.sceneMode, sceneModeLabels, VK_COMPUTE_MIPMAPS_SCENE_MODE_COUNT);
   auto showAllMips = VK_COMPUTE_MIPMAPS_SCENE_MODE_SHOW_ALL_MIPS;
-  if (oldSceneMode != m_cam.sceneMode && m_cam.sceneMode == showAllMips)
+  if(oldSceneMode != m_cam.sceneMode && m_cam.sceneMode == showAllMips)
   {
     m_wantFitImageToScreen = true;  // Requested by Pascal
   }
-  if (m_drawingDynamicImage)
+  if(m_drawingDynamicImage)
     ImGui::Checkbox("Animate [space]", &m_doStep);
   else
     ImGui::Text("Not showing animated image");
@@ -308,9 +295,8 @@ void Gui::doVisualizationControls()
 // Open a dialog box and record the image file that the user wants opened.
 void Gui::doOpenImageFileDialog()
 {
-  m_userSelectedOpenImageFilename =
-      NVPSystem::windowOpenFileDialog(m_pWindow, "Select Image", s_openExts);
-  if (!m_userSelectedOpenImageFilename.empty())
+  m_userSelectedOpenImageFilename = NVPSystem::windowOpenFileDialog(m_pWindow, "Select Image", s_openExts);
+  if(!m_userSelectedOpenImageFilename.empty())
   {
     m_wantLoadImageFilename = m_userSelectedOpenImageFilename.c_str();
   }
@@ -319,9 +305,8 @@ void Gui::doOpenImageFileDialog()
 // Open a dialog box and record the image file that the user wants saved.
 void Gui::doSaveImageFileDialog()
 {
-  m_userSelectedSaveImageFilename =
-      NVPSystem::windowSaveFileDialog(m_pWindow, "Save Image", s_saveExts);
-  if (!m_userSelectedSaveImageFilename.empty())
+  m_userSelectedSaveImageFilename = NVPSystem::windowSaveFileDialog(m_pWindow, "Save Image", s_saveExts);
+  if(!m_userSelectedSaveImageFilename.empty())
   {
     m_wantWriteImageBaseFilename = m_userSelectedSaveImageFilename.c_str();
   }
@@ -338,20 +323,18 @@ void Gui::doFramePerformanceControls(nvvk::ProfilerVK& vkProfiler)
 void Gui::doToolsControls()
 {
   ImGui::Text("Note: see console for following");
-  if (ImGui::Button("Start Benchmark [B]"))
+  if(ImGui::Button("Start Benchmark [B]"))
   {
     m_wantBenchmark = true;
   }
-  if (ImGui::Button("Test Downloaded Image [T]"))
+  if(ImGui::Button("Test Downloaded Image [T]"))
   {
     m_wantTestDownloadedImage = true;
   }
   ImGui::Checkbox("Log Performance [G]", &m_doLogPerformance);
 }
 
-void Gui::showCpuGpuTime(nvvk::ProfilerVK& vkProfiler,
-                         const char*       id,
-                         const char*       label)
+void Gui::showCpuGpuTime(nvvk::ProfilerVK& vkProfiler, const char* id, const char* label)
 {
   label = label ? label : id;
   nvh::Profiler::TimerInfo timerInfo{};
@@ -371,13 +354,13 @@ void Gui::showCpuGpuTime(nvvk::ProfilerVK& vkProfiler,
 void Gui::updateFpsSample()
 {
   double now = glfwGetTime();
-  if (m_lastUpdateTime == 0)
+  if(m_lastUpdateTime == 0)
   {
     m_lastUpdateTime = now;
     return;
   }
 
-  if (int64_t(now) != m_thisSecond)
+  if(int64_t(now) != m_thisSecond)
   {
     m_displayedFPS       = m_frameCountThisSecond;
     m_displayedFrameTime = m_frameTimeThisSecond;
@@ -399,15 +382,11 @@ void Gui::updateFpsSample()
 // is always "in the same position" as it scrolls.
 void Gui::zoomCallback2d(double dy)
 {
-  nvmath::vec2 mouseTexCoord =
-      m_cam.offset
-      + m_cam.scale * nvmath::vec2f(m_zoomMouseX, m_zoomMouseY);
-  float scale = expf(float(dy));
+  glm::vec2 mouseTexCoord = m_cam.offset + m_cam.scale * glm::vec2(m_zoomMouseX, m_zoomMouseY);
+  float        scale         = expf(float(dy));
   m_cam.scale *= scale;
 
-  nvmath::vec2 wrongTexCoord =
-      m_cam.offset
-      + m_cam.scale * nvmath::vec2f(m_zoomMouseX, m_zoomMouseY);
+  glm::vec2 wrongTexCoord = m_cam.offset + m_cam.scale * glm::vec2(m_zoomMouseX, m_zoomMouseY);
 
   m_cam.offset += (mouseTexCoord - wrongTexCoord);
 }
@@ -415,26 +394,24 @@ void Gui::zoomCallback2d(double dy)
 // 3d camera scroll wheel callback, moves you forwards and backwards.
 void Gui::zoomCallback3d(double dy)
 {
-  m_cameraManipulator.wheel(
-      int(copysign(1.0, dy)),
-      {m_lmb, m_mmb, m_rmb, bool(m_glfwMods & GLFW_MOD_SHIFT),
-       bool(m_glfwMods & GLFW_MOD_CONTROL), bool(m_glfwMods & GLFW_MOD_ALT)});
+  m_cameraManipulator.wheel(int(copysign(1.0, dy)), {m_lmb, m_mmb, m_rmb, bool(m_glfwMods & GLFW_MOD_SHIFT),
+                                                     bool(m_glfwMods & GLFW_MOD_CONTROL), bool(m_glfwMods & GLFW_MOD_ALT)});
 }
 
 // 2d mouse move callback, left mouse button pans, right mouse zooms
 // slowly (makes aliasing issues more obvious).
 void Gui::mouseMoveCallback2d(float x, float y)
 {
-  float dx   = float(x - m_mouseX);
-  float dy   = float(y - m_mouseY);
+  float dx = float(x - m_mouseX);
+  float dy = float(y - m_mouseY);
 
-  if (m_lmb)
+  if(m_lmb)
   {
     m_cam.offset.x -= dx * m_cam.scale.x;
     m_cam.offset.y -= dy * m_cam.scale.y;
   }
 
-  if (m_rmb)
+  if(m_rmb)
   {
     zoomCallback2d(dy * .002);
   }
@@ -448,10 +425,9 @@ void Gui::mouseMoveCallback2d(float x, float y)
 // 3d mouse move callback.
 void Gui::mouseMoveCallback3d(float x, float y)
 {
-  m_cameraManipulator.mouseMove(
-      int(x), int(y),
-      {m_lmb, m_mmb, m_rmb, bool(m_glfwMods & GLFW_MOD_SHIFT),
-       bool(m_glfwMods & GLFW_MOD_CONTROL), bool(m_glfwMods & GLFW_MOD_ALT)});
+  m_cameraManipulator.mouseMove(int(x), int(y),
+                                {m_lmb, m_mmb, m_rmb, bool(m_glfwMods & GLFW_MOD_SHIFT),
+                                 bool(m_glfwMods & GLFW_MOD_CONTROL), bool(m_glfwMods & GLFW_MOD_ALT)});
 }
 
 Gui& Gui::getData(GLFWwindow* pWindow)
@@ -467,11 +443,10 @@ void Gui::scrollCallback(GLFWwindow* pWindow, double x, double y)
 {
   Gui& g = getData(pWindow);
   ImGui_ImplGlfw_ScrollCallback(pWindow, x, y);
-  if (ImGui::GetIO().WantCaptureMouse)
+  if(ImGui::GetIO().WantCaptureMouse)
   {
-
   }
-  else if (g.m_cam.sceneMode == VK_COMPUTE_MIPMAPS_SCENE_MODE_3D)
+  else if(g.m_cam.sceneMode == VK_COMPUTE_MIPMAPS_SCENE_MODE_3D)
   {
     g.zoomCallback3d(y * -0.25);
   }
@@ -483,18 +458,17 @@ void Gui::scrollCallback(GLFWwindow* pWindow, double x, double y)
 
 void Gui::mouseCallback(GLFWwindow* pWindow, int button, int action, int mods)
 {
-  Gui& g = getData(pWindow);
+  Gui& g       = getData(pWindow);
   g.m_glfwMods = mods;
   ImGui_ImplGlfw_MouseButtonCallback(pWindow, button, action, mods);
-  bool mouseFlag =
-      (action != GLFW_RELEASE) && !ImGui::GetIO().WantCaptureMouse;
+  bool mouseFlag = (action != GLFW_RELEASE) && !ImGui::GetIO().WantCaptureMouse;
 
-  if (action == GLFW_PRESS)
+  if(action == GLFW_PRESS)
   {
     g.m_cameraManipulator.setMousePosition(int(g.m_mouseX), int(g.m_mouseY));
   }
 
-  switch (button)
+  switch(button)
   {
     case GLFW_MOUSE_BUTTON_RIGHT:
       g.m_rmb = mouseFlag;
@@ -506,22 +480,24 @@ void Gui::mouseCallback(GLFWwindow* pWindow, int button, int action, int mods)
       g.m_lmb = mouseFlag;
       break;
     case 3:
-      if (action == GLFW_PRESS) g.m_cam.explicitLod -= 1.0f;
+      if(action == GLFW_PRESS)
+        g.m_cam.explicitLod -= 1.0f;
       goto updateLodMode;
     case 4:
-      if (action == GLFW_PRESS) g.m_cam.explicitLod += 1.0f;
+      if(action == GLFW_PRESS)
+        g.m_cam.explicitLod += 1.0f;
       goto updateLodMode;
     default:
-      break; // Get rid of warning.
+      break;  // Get rid of warning.
   }
   return;
 
 updateLodMode:
-  if (g.m_cam.filterMode == VK_COMPUTE_MIPMAPS_FILTER_MODE_TRILINEAR)
+  if(g.m_cam.filterMode == VK_COMPUTE_MIPMAPS_FILTER_MODE_TRILINEAR)
   {
     g.m_cam.filterMode = VK_COMPUTE_MIPMAPS_FILTER_MODE_NEAREST_EXPLICIT_LOD;
   }
-  if (g.m_cam.sceneMode == VK_COMPUTE_MIPMAPS_SCENE_MODE_SHOW_ALL_MIPS)
+  if(g.m_cam.sceneMode == VK_COMPUTE_MIPMAPS_SCENE_MODE_SHOW_ALL_MIPS)
   {
     g.m_cam.sceneMode = VK_COMPUTE_MIPMAPS_SCENE_MODE_2D_NOT_TILED;
   }
@@ -530,7 +506,7 @@ updateLodMode:
 void Gui::cursorPositionCallback(GLFWwindow* pWindow, double x, double y)
 {
   Gui& g = getData(pWindow);
-  if (g.m_cam.sceneMode == VK_COMPUTE_MIPMAPS_SCENE_MODE_3D)
+  if(g.m_cam.sceneMode == VK_COMPUTE_MIPMAPS_SCENE_MODE_3D)
   {
     g.mouseMoveCallback3d(float(x), float(y));
   }
@@ -544,7 +520,7 @@ void Gui::cursorPositionCallback(GLFWwindow* pWindow, double x, double y)
 
 void Gui::charCallbackImpl(unsigned chr)
 {
-  switch (chr)
+  switch(chr)
   {
     case ' ':
       m_doStep = !m_doStep;
@@ -554,11 +530,11 @@ void Gui::charCallbackImpl(unsigned chr)
       break;
     case 'f':
       m_cam.filterMode++;
-      if (m_cam.filterMode >= VK_COMPUTE_MIPMAPS_FILTER_MODE_COUNT)
+      if(m_cam.filterMode >= VK_COMPUTE_MIPMAPS_FILTER_MODE_COUNT)
       {
         m_cam.filterMode = VK_COMPUTE_MIPMAPS_FILTER_MODE_TRILINEAR;
       }
-      if (m_cam.sceneMode == VK_COMPUTE_MIPMAPS_SCENE_MODE_SHOW_ALL_MIPS)
+      if(m_cam.sceneMode == VK_COMPUTE_MIPMAPS_SCENE_MODE_SHOW_ALL_MIPS)
       {
         m_cam.sceneMode = VK_COMPUTE_MIPMAPS_SCENE_MODE_2D_NOT_TILED;
       }
@@ -570,7 +546,7 @@ void Gui::charCallbackImpl(unsigned chr)
       m_doLogPerformance ^= 1;
       break;
     case 'k':
-      if (m_cam.backgroundBrightness == 0.5f)
+      if(m_cam.backgroundBrightness == 0.5f)
       {
         m_cam.backgroundBrightness = 0.01f;
       }
@@ -584,11 +560,12 @@ void Gui::charCallbackImpl(unsigned chr)
       break;
     case 'M':
       m_mipmapsGeneratedPerFrame--;
-      if (m_mipmapsGeneratedPerFrame <= 0) m_mipmapsGeneratedPerFrame = 1;
+      if(m_mipmapsGeneratedPerFrame <= 0)
+        m_mipmapsGeneratedPerFrame = 1;
       break;
     case 'n':
       m_alternativeIdxSetting++;
-      if (m_alternativeIdxSetting >= pipelineAlternativeCount)
+      if(m_alternativeIdxSetting >= pipelineAlternativeCount)
       {
         m_alternativeIdxSetting = 0;
       }
@@ -598,14 +575,14 @@ void Gui::charCallbackImpl(unsigned chr)
       break;
     case 'p':
       m_alternativeIdxSetting--;
-      if (m_alternativeIdxSetting < 0)
+      if(m_alternativeIdxSetting < 0)
       {
         m_alternativeIdxSetting = pipelineAlternativeCount - 1;
       }
       break;
     case 's':
       m_cam.sceneMode++;
-      if (m_cam.sceneMode >= VK_COMPUTE_MIPMAPS_SCENE_MODE_COUNT)
+      if(m_cam.sceneMode >= VK_COMPUTE_MIPMAPS_SCENE_MODE_COUNT)
       {
         m_cam.sceneMode = 0;
       }
@@ -645,6 +622,5 @@ void Gui::addCallbacks(GLFWwindow* pWindow)
   glfwSetKeyCallback(pWindow, keyCallback);
 }
 
-const char* Gui::s_openExts =
-    "Image Files|*.png;*.jpg;*.jpeg;*.tga;*.bmp;*.psd;*.gif;*.hdr;*.pic";
+const char* Gui::s_openExts = "Image Files|*.png;*.jpg;*.jpeg;*.tga;*.bmp;*.psd;*.gif;*.hdr;*.pic";
 const char* Gui::s_saveExts = "TGA files|*.TGA";
