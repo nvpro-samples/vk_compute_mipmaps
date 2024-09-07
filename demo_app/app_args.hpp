@@ -1,4 +1,4 @@
-// Copyright 2021 NVIDIA CORPORATION
+// Copyright 2021-2024 NVIDIA CORPORATION
 // SPDX-License-Identifier: Apache-2.0
 #ifndef VK_COMPUTE_MIPMAPS_DEMO_APP_ARGS_HPP_
 #define VK_COMPUTE_MIPMAPS_DEMO_APP_ARGS_HPP_
@@ -9,16 +9,16 @@
 // Arguments for the App.
 struct AppArgs
 {
-  std::string inputFilename = "";
+  std::string       inputFilename = "";
   static const char inputFilenameHelpString[];
 
-  std::string outputFilename = "";
+  std::string       outputFilename = "";
   static const char outputFilenameHelpString[];
 
-  std::string outputPipelineAlternativeLabel = "default";
+  std::string       outputPipelineAlternativeLabel = "default";
   static const char outputPipelineAlternativeLabelHelpString[];
 
-  bool test;
+  bool              test = false;
   static const char testHelpString[];
 
   // Size of texture that the animation is drawn to.
@@ -27,15 +27,15 @@ struct AppArgs
 
   // Output filename for benchmark; if specified, run the benchmark
   // on startup.
-  std::string benchmarkFilename = "";
+  std::string       benchmarkFilename = "";
   static const char benchmarkFilenameHelpString[];
 
   // Flag that enables static performance statistics for compute pipelines.
-  bool dumpPipelineStats = false;
+  bool              dumpPipelineStats = false;
   static const char dumpPipelineStatsHelpString[];
 
   // Flag that forces window to be open even if implicitly disabled.
-  bool openWindow = false;
+  bool              openWindow = false;
   static const char openWindowHelpString[];
 };
 

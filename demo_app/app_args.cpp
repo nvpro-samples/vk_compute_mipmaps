@@ -1,4 +1,4 @@
-// Copyright 2021 NVIDIA CORPORATION
+// Copyright 2021-2024 NVIDIA CORPORATION
 // SPDX-License-Identifier: Apache-2.0
 #include "app_args.hpp"
 
@@ -27,7 +27,7 @@ const char AppArgs::testHelpString[] =
 
 const char AppArgs::animationTextureHelpString[] =
     "-texture [int] [int] : Specify the texture size that the state of the\n"
-     "animation is drawn to.\n";
+    "animation is drawn to.\n";
 
 const char AppArgs::benchmarkFilenameHelpString[] =
     "-benchmark [filename] : dump json nanosecond timing info to named file.\n"
@@ -41,14 +41,12 @@ const char AppArgs::openWindowHelpString[] =
 
 void parseArgs(int argc, char** argv, AppArgs* outArgs)
 {
-  auto badNumber = [argv](const char* badStr)
-  {
-    fprintf(stderr, "%s: Expected positive integer, not '%s'\n", argv[0],
-            badStr);
+  auto badNumber = [argv](const char* badStr) {
+    fprintf(
+        stderr, "%s: Expected positive integer, not '%s'\n", argv[0], badStr);
   };
-  auto checkNeededParam = [argv](const char* arg, const char* needed)
-  {
-    if (needed == nullptr)
+  auto checkNeededParam = [argv](const char* arg, const char* needed) {
+    if(needed == nullptr)
     {
       fprintf(stderr, "%s: %s missing parameter\n", argv[0], arg);
       exit(1);
@@ -58,77 +56,76 @@ void parseArgs(int argc, char** argv, AppArgs* outArgs)
   bool windowExplicitlyEnabled  = false;
   bool windowImplicitlyDisabled = false;
 
-  for (int i = 1; i < argc; ++i)
+  for(int i = 1; i < argc; ++i)
   {
     const char* arg    = argv[i];
-    const char* param0 = argv[i+1];
-    const char* param1 = param0 == nullptr ? nullptr : argv[i+2];
-    long x, y;
-    char* endptr;
+    const char* param0 = argv[i + 1];
+    // This logic is OK because C requires that argv is a null-terminated list.
+    const char* param1 = param0 == nullptr ? nullptr : argv[i + 2];
 
-    if (strcmp(arg, "-h") == 0 || strcmp(arg, "/?") == 0)
+    if(strcmp(arg, "-h") == 0 || strcmp(arg, "/?") == 0)
     {
-      printf("%s:\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s",
-        argv[0],
-        AppArgs::inputFilenameHelpString,
-        AppArgs::outputFilenameHelpString,
-        AppArgs::outputPipelineAlternativeLabelHelpString,
-        AppArgs::testHelpString,
-        AppArgs::animationTextureHelpString,
-        AppArgs::benchmarkFilenameHelpString,
-        AppArgs::dumpPipelineStatsHelpString,
-        AppArgs::openWindowHelpString);
+      printf(
+          "%s:\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s", argv[0],
+          AppArgs::inputFilenameHelpString, AppArgs::outputFilenameHelpString,
+          AppArgs::outputPipelineAlternativeLabelHelpString,
+          AppArgs::testHelpString, AppArgs::animationTextureHelpString,
+          AppArgs::benchmarkFilenameHelpString,
+          AppArgs::dumpPipelineStatsHelpString, AppArgs::openWindowHelpString);
       exit(0);
     }
-    else if (strcmp(arg, "-i") == 0)
+    else if(strcmp(arg, "-i") == 0)
     {
       checkNeededParam(arg, param0);
       outArgs->inputFilename = param0;
       ++i;
     }
-    else if (strcmp(arg, "-o") == 0)
+    else if(strcmp(arg, "-o") == 0)
     {
       windowImplicitlyDisabled = true;
       checkNeededParam(arg, param0);
       outArgs->outputFilename = param0;
       ++i;
     }
-    else if (strcmp(arg, "-pipeline") == 0)
+    else if(strcmp(arg, "-pipeline") == 0)
     {
       checkNeededParam(arg, param0);
       outArgs->outputPipelineAlternativeLabel = param0;
       ++i;
     }
-    else if (strcmp(arg, "-test") == 0)
+    else if(strcmp(arg, "-test") == 0)
     {
       outArgs->test = true;
     }
-    else if (strcmp(arg, "-texture") == 0)
+    else if(strcmp(arg, "-texture") == 0)
     {
       checkNeededParam(arg, param0);
-      x = strtol(param0, &endptr, 0);
-      if (*endptr != '\0' || x <= 0) badNumber(param0);
+      char* endptr = nullptr;
+      long  x      = strtol(param0, &endptr, 0);
+      if(*endptr != '\0' || x <= 0)
+        badNumber(param0);
 
       checkNeededParam(arg, param1);
-      y = strtol(param1, &endptr, 0);
-      if (*endptr != '\0' || y <= 0) badNumber(param1);
+      long y = strtol(param1, &endptr, 0);
+      if(*endptr != '\0' || y <= 0)
+        badNumber(param1);
 
-      outArgs->animationTextureWidth  = uint32_t(x);
-      outArgs->animationTextureHeight = uint32_t(y);
+      outArgs->animationTextureWidth  = static_cast<uint32_t>(x);
+      outArgs->animationTextureHeight = static_cast<uint32_t>(y);
       i += 2;
     }
-    else if (strcmp(arg, "-benchmark") == 0)
+    else if(strcmp(arg, "-benchmark") == 0)
     {
       windowImplicitlyDisabled = true;
       checkNeededParam(arg, param0);
       outArgs->benchmarkFilename = param0;
       ++i;
     }
-    else if (strcmp(arg, "-stats") == 0)
+    else if(strcmp(arg, "-stats") == 0)
     {
       outArgs->dumpPipelineStats = true;
     }
-    else if (strcmp(arg, "-window") == 0)
+    else if(strcmp(arg, "-window") == 0)
     {
       windowExplicitlyEnabled = true;
     }

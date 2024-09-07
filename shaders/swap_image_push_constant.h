@@ -1,4 +1,4 @@
-// Copyright 2021 NVIDIA CORPORATION
+// Copyright 2021-2024 NVIDIA CORPORATION
 // SPDX-License-Identifier: Apache-2.0
 
 // Push constant for the pipeline that paints to the screen.
@@ -7,10 +7,12 @@
 #define NVPRO_SAMPLES_VK_COMPUTE_MIPMAPS_SWAP_IMAGE_PUSH_CONSTANT_H_
 
 #ifdef __cplusplus
-#include <stdint.h>
-#include "nvmath/nvmath_glsltypes.h" // emulate glsl types in C++
-#define vec2 nvmath::vec2
-#define int  int32_t      /* Possibly undefined behavior? */
+#include <limits.h>
+#include <glm/ext/vector_float2.hpp>
+#define vec2 glm::vec2
+// Make sure an int is 32 bits
+static_assert(sizeof(int) == 4);
+static_assert(CHAR_BIT == 8);
 #endif
 
 struct SwapImagePushConstant
@@ -29,7 +31,6 @@ struct SwapImagePushConstant
 
 #ifdef __cplusplus
 #undef vec2
-#undef int
 #endif
 
 #endif

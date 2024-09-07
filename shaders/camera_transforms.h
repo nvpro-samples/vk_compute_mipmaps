@@ -1,4 +1,4 @@
-// Copyright 2021 NVIDIA CORPORATION
+// Copyright 2021-2024 NVIDIA CORPORATION
 // SPDX-License-Identifier: Apache-2.0
 
 // Polyglot include file (GLSL and C++) for the camera transforms struct.
@@ -7,17 +7,16 @@
 #define NVPRO_SAMPLES_VK_COMPUTE_MIPMAPS_CAMERA_TRANSFORMS_H_
 
 #ifdef __cplusplus
-#include <math.h>
-#include <nvmath/nvmath_glsltypes.h> // emulate glsl types in C++
+#include <glm/ext/matrix_float4x4.hpp>
 #include <stdint.h>
 #endif
 
 struct CameraTransforms
 {
-  #ifdef __cplusplus
-    using mat4 = nvmath::mat4;
-    using uint = uint32_t;
-  #endif
+#ifdef __cplusplus
+  using mat4 = glm::mat4;
+  using uint = uint32_t;
+#endif
 
   // View and projection matrices, along with their inverses.
   // If using 2D view, only the proj matrix is meaningful, translates

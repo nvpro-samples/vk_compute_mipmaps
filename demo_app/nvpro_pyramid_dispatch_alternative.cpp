@@ -1,19 +1,24 @@
-// Copyright 2021 NVIDIA CORPORATION
+// Copyright 2021-2024 NVIDIA CORPORATION
 // SPDX-License-Identifier: Apache-2.0
 
 // Dictionary of dispatcher callbacks for tested alternative mipmap pipelines.
 
 #include "nvpro_pyramid_dispatch_alternative.hpp"
 
+#include "nvpro_pyramid_dispatch.hpp"
+
+#include <stdint.h>
+#include <string>
 #include <unordered_map>
+#include <vulkan/vulkan_core.h>
 
 using DispatcherMap =
     std::unordered_map<std::string, nvpro_pyramid_dispatcher_t>;
 
 static DispatcherMap& getFastDispatcherMap()
 {
-  static DispatcherMap map;
-  return map;
+  static DispatcherMap s_map;
+  return s_map;
 }
 
 nvpro_pyramid_dispatcher_t getFastDispatcher(const std::string& name)
@@ -37,8 +42,8 @@ NVPRO_PYRAMID_ADD_FAST_DISPATCHER(levels_1_6, nvproPyramidDefaultFastDispatcher<
 
 static DispatcherMap& getGeneralDispatcherMap()
 {
-  static DispatcherMap map;
-  return map;
+  static DispatcherMap s_map;
+  return s_map;
 }
 
 nvpro_pyramid_dispatcher_t getGeneralDispatcher(const std::string& name)

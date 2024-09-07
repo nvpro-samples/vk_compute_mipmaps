@@ -1,7 +1,10 @@
+// Copyright 2021-2024 NVIDIA CORPORATION
+// SPDX-License-Identifier: Apache-2.0
+
 #ifndef VK_COMPUTE_MIPMAPS_DEMO_GUI_HPP_
 #define VK_COMPUTE_MIPMAPS_DEMO_GUI_HPP_
 
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan_core.h>
 #include "GLFW/glfw3.h"
 
 #include <string>
@@ -11,14 +14,10 @@
 #include "nvvk/context_vk.hpp"
 #include "nvvk/profiler_vk.hpp"
 
-#define IMGUI_DEFINE_MATH_OPERATORS
-#include <imgui.h>
-#include <backends/imgui_impl_glfw.h>
-#include <backends/imgui_impl_vulkan.h>
-#include "imgui/imgui_helper.h"
-
 #include "camera_controls.hpp"
 class FrameManager;
+
+struct ImGuiContext;
 
 // This is the data stored behind the GLFW window's user pointer.
 // Simple container for ImGui stuff, useful only for my basic needs.
@@ -88,11 +87,11 @@ public:
   bool m_wantFitImageToScreen    = true;
 
   // Other Controls
-  bool  m_doStep           = true;
-  bool  m_vsync            = false;
-  bool  m_doLogPerformance = false;
-  bool  m_guiVisible       = true;
-  bool  m_doGaussianBlur   = true;
+  bool m_doStep           = true;
+  bool m_vsync            = false;
+  bool m_doLogPerformance = false;
+  bool m_guiVisible       = true;
+  bool m_doGaussianBlur   = true;
 
   int m_mipmapsGeneratedPerFrame = 1;
 
@@ -112,13 +111,17 @@ public:
   // Must be called once after FrameManager initialized, so that the
   // correct queue is chosen. Some initialization is done directly,
   // some by recording commands to the given command buffer.
-  void cmdInit(VkCommandBuffer      cmdBuf,
-               GLFWwindow*          pWindow,
-               const nvvk::Context& ctx,
-               const FrameManager&  frameManager,
-               VkRenderPass         renderPass,
-               uint32_t             subpass);
-  Gui() : m_cameraManipulator(CameraManip) { }
+  void cmdInit(
+      VkCommandBuffer      cmdBuf,
+      GLFWwindow*          pWindow,
+      const nvvk::Context& ctx,
+      const FrameManager&  frameManager,
+      VkRenderPass         renderPass,
+      uint32_t             subpass);
+  Gui()
+      : m_cameraManipulator(CameraManip)
+  {
+  }
   Gui(Gui&&) = delete;
   ~Gui();
 
@@ -134,8 +137,10 @@ private:
   void doSaveImageFileDialog();
   void doFramePerformanceControls(nvvk::ProfilerVK& vkProfiler);
   void doToolsControls();
-  void showCpuGpuTime(nvvk::ProfilerVK& vkProfiler, const char* id,
-                      const char* label = nullptr);
+  void showCpuGpuTime(
+      nvvk::ProfilerVK& vkProfiler,
+      const char*       id,
+      const char*       label = nullptr);
   void updateFpsSample();
   void zoomCallback2d(double dy);
   void zoomCallback3d(double dy);

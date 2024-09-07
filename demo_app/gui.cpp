@@ -1,10 +1,26 @@
+// Copyright 2021-2024 NVIDIA CORPORATION
+// SPDX-License-Identifier: Apache-2.0
+
 #include "gui.hpp"
 
+#include <assert.h>
 #include <math.h>
+#include <stdint.h>
+#include <vulkan/vulkan_core.h>
 
+#include "GLFW/glfw3.h"
+
+#define IMGUI_DEFINE_MATH_OPERATORS
+#include <imgui.h>
+#include <backends/imgui_impl_glfw.h>
+#include <backends/imgui_impl_vulkan.h>
+#include "imgui/imgui_helper.h"
+
+#include <glm/ext/vector_float2.hpp>
 #include "nvh/cameramanipulator.hpp"
 #include "nvh/container_utils.hpp"
-#include <glm/glm.hpp>
+#include "nvvk/context_vk.hpp"
+#include "nvvk/profiler_vk.hpp"
 
 #include "frame_manager.hpp"
 #include "image_names.hpp"
@@ -13,7 +29,13 @@
 #include "shaders/filter_modes.h"
 #include "shaders/scene_modes.h"
 
-void Gui::cmdInit(VkCommandBuffer cmdBuf, GLFWwindow* pWindow, const nvvk::Context& ctx, const FrameManager& frameManager, VkRenderPass renderPass, uint32_t subpass)
+void Gui::cmdInit(
+    VkCommandBuffer      cmdBuf,
+    GLFWwindow*          pWindow,
+    const nvvk::Context& ctx,
+    const FrameManager&  frameManager,
+    VkRenderPass         renderPass,
+    uint32_t             subpass)
 {
   m_pWindow = pWindow;
   m_device  = ctx;
@@ -42,15 +64,16 @@ void Gui::cmdInit(VkCommandBuffer cmdBuf, GLFWwindow* pWindow, const nvvk::Conte
   ImGuiH::setFonts(ImGuiH::FONT_PROPORTIONAL_SCALED);
   ImGuiH::setStyle(true);
 
-  VkDescriptorPoolSize       poolSizes[] = {VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_SAMPLER, 1},
-                                            VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1},
-                                            VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1}};
-  VkDescriptorPoolCreateInfo poolInfo    = {VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-                                            nullptr,
-                                            VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
-                                            arraySize(poolSizes),
-                                            arraySize(poolSizes),
-                                            poolSizes};
+  VkDescriptorPoolSize poolSizes[] = {
+      VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_SAMPLER, 1},
+      VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1},
+      VkDescriptorPoolSize{VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1}};
+  const VkDescriptorPoolCreateInfo poolInfo = {
+      .sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+      .flags         = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
+      .maxSets       = arraySize(poolSizes),
+      .poolSizeCount = arraySize(poolSizes),
+      .pPoolSizes    = poolSizes};
   assert(m_pool == VK_NULL_HANDLE);
   NVVK_CHECK(vkCreateDescriptorPool(ctx, &poolInfo, nullptr, &m_pool));
 
@@ -80,10 +103,10 @@ Gui::~Gui()
 {
   if(m_device != nullptr)
   {
-    vkDestroyDescriptorPool(m_device, m_pool, nullptr);
     ImGui_ImplVulkan_DestroyFontsTexture();
     ImGui_ImplVulkan_Shutdown();
     ImGui_ImplGlfw_Shutdown();
+    vkDestroyDescriptorPool(m_device, m_pool, nullptr);
   }
   if(m_pWindow != nullptr)
   {
@@ -149,7 +172,9 @@ void Gui::updateCamera()
 void Gui::doInputOutputControls()
 {
   int showImageIdx = 0;
-  ImGui::Combo(" " /* breaks if empty string */, &showImageIdx, m_imageMenuOptions.data(), int(m_imageMenuOptions.size()));
+  ImGui::Combo(
+      " " /* breaks if empty string */, &showImageIdx,
+      m_imageMenuOptions.data(), int(m_imageMenuOptions.size()));
   if(showImageIdx == 1)
   {
     m_wantLoadImageFilename = "";
@@ -191,14 +216,19 @@ void Gui::doMipmapGenerationControls(nvvk::ProfilerVK& vkProfiler)
     {
       labels.push_back(pipelineAlternatives[i].label);
     }
-    ImGui::Combo("##fixesSurprisingImGuiDesign", &m_alternativeIdxSetting, labels.data(), int(labels.size()));
+    ImGui::Combo(
+        "##fixesSurprisingImGuiDesign", &m_alternativeIdxSetting, labels.data(),
+        int(labels.size()));
     m_showAllPipelineAlternatives = true;
   }
   else
   {
-    ImGui::RadioButton("nvpro_pyramid", &m_alternativeIdxSetting, defaultPipelineAlternativeIdx);
+    ImGui::RadioButton(
+        "nvpro_pyramid", &m_alternativeIdxSetting,
+        defaultPipelineAlternativeIdx);
     ImGui::SameLine();
-    ImGui::RadioButton("blit", &m_alternativeIdxSetting, blitPipelineAlternativeIdx);
+    ImGui::RadioButton(
+        "blit", &m_alternativeIdxSetting, blitPipelineAlternativeIdx);
     ImGui::SameLine();
     int showMore = 0;
     ImGui::RadioButton("more...", &showMore, 1);
@@ -228,7 +258,9 @@ void Gui::doVisualizationControls()
   if(m_cam.sceneMode == VK_COMPUTE_MIPMAPS_SCENE_MODE_SHOW_ALL_MIPS)
   {
     int filterMode = VK_COMPUTE_MIPMAPS_FILTER_MODE_COUNT;
-    ImGui::Combo("Filter Mode [f]", &filterMode, filterModeLabels, VK_COMPUTE_MIPMAPS_FILTER_MODE_COUNT + 1);
+    ImGui::Combo(
+        "Filter Mode [f]", &filterMode, filterModeLabels,
+        VK_COMPUTE_MIPMAPS_FILTER_MODE_COUNT + 1);
     if(filterMode != VK_COMPUTE_MIPMAPS_FILTER_MODE_COUNT)
     {
       m_cam.filterMode = filterMode;
@@ -237,7 +269,9 @@ void Gui::doVisualizationControls()
   }
   else
   {
-    ImGui::Combo("Filter Mode [f]", &m_cam.filterMode, filterModeLabels, VK_COMPUTE_MIPMAPS_FILTER_MODE_COUNT);
+    ImGui::Combo(
+        "Filter Mode [f]", &m_cam.filterMode, filterModeLabels,
+        VK_COMPUTE_MIPMAPS_FILTER_MODE_COUNT);
   }
   float newLod     = m_cam.explicitLod;
   float upperBound = std::max(m_maxExplicitLod, 0.0001f);
@@ -280,7 +314,9 @@ void Gui::doVisualizationControls()
     }
   }
   auto oldSceneMode = m_cam.sceneMode;
-  ImGui::Combo("Scene [s]", &m_cam.sceneMode, sceneModeLabels, VK_COMPUTE_MIPMAPS_SCENE_MODE_COUNT);
+  ImGui::Combo(
+      "Scene [s]", &m_cam.sceneMode, sceneModeLabels,
+      VK_COMPUTE_MIPMAPS_SCENE_MODE_COUNT);
   auto showAllMips = VK_COMPUTE_MIPMAPS_SCENE_MODE_SHOW_ALL_MIPS;
   if(oldSceneMode != m_cam.sceneMode && m_cam.sceneMode == showAllMips)
   {
@@ -295,7 +331,8 @@ void Gui::doVisualizationControls()
 // Open a dialog box and record the image file that the user wants opened.
 void Gui::doOpenImageFileDialog()
 {
-  m_userSelectedOpenImageFilename = NVPSystem::windowOpenFileDialog(m_pWindow, "Select Image", s_openExts);
+  m_userSelectedOpenImageFilename =
+      NVPSystem::windowOpenFileDialog(m_pWindow, "Select Image", s_openExts);
   if(!m_userSelectedOpenImageFilename.empty())
   {
     m_wantLoadImageFilename = m_userSelectedOpenImageFilename.c_str();
@@ -305,7 +342,8 @@ void Gui::doOpenImageFileDialog()
 // Open a dialog box and record the image file that the user wants saved.
 void Gui::doSaveImageFileDialog()
 {
-  m_userSelectedSaveImageFilename = NVPSystem::windowSaveFileDialog(m_pWindow, "Save Image", s_saveExts);
+  m_userSelectedSaveImageFilename =
+      NVPSystem::windowSaveFileDialog(m_pWindow, "Save Image", s_saveExts);
   if(!m_userSelectedSaveImageFilename.empty())
   {
     m_wantWriteImageBaseFilename = m_userSelectedSaveImageFilename.c_str();
@@ -334,7 +372,10 @@ void Gui::doToolsControls()
   ImGui::Checkbox("Log Performance [G]", &m_doLogPerformance);
 }
 
-void Gui::showCpuGpuTime(nvvk::ProfilerVK& vkProfiler, const char* id, const char* label)
+void Gui::showCpuGpuTime(
+    nvvk::ProfilerVK& vkProfiler,
+    const char*       id,
+    const char*       label)
 {
   label = label ? label : id;
   nvh::Profiler::TimerInfo timerInfo{};
@@ -382,11 +423,13 @@ void Gui::updateFpsSample()
 // is always "in the same position" as it scrolls.
 void Gui::zoomCallback2d(double dy)
 {
-  glm::vec2 mouseTexCoord = m_cam.offset + m_cam.scale * glm::vec2(m_zoomMouseX, m_zoomMouseY);
-  float     scale         = expf(float(dy));
+  glm::vec2 mouseTexCoord =
+      m_cam.offset + m_cam.scale * glm::vec2(m_zoomMouseX, m_zoomMouseY);
+  float scale = expf(float(dy));
   m_cam.scale *= scale;
 
-  glm::vec2 wrongTexCoord = m_cam.offset + m_cam.scale * glm::vec2(m_zoomMouseX, m_zoomMouseY);
+  glm::vec2 wrongTexCoord =
+      m_cam.offset + m_cam.scale * glm::vec2(m_zoomMouseX, m_zoomMouseY);
 
   m_cam.offset += (mouseTexCoord - wrongTexCoord);
 }
@@ -394,8 +437,10 @@ void Gui::zoomCallback2d(double dy)
 // 3d camera scroll wheel callback, moves you forwards and backwards.
 void Gui::zoomCallback3d(double dy)
 {
-  m_cameraManipulator.wheel(int(copysign(1.0, dy)), {m_lmb, m_mmb, m_rmb, bool(m_glfwMods & GLFW_MOD_SHIFT),
-                                                     bool(m_glfwMods & GLFW_MOD_CONTROL), bool(m_glfwMods & GLFW_MOD_ALT)});
+  m_cameraManipulator.wheel(
+      int(copysign(1.0, dy)),
+      {m_lmb, m_mmb, m_rmb, bool(m_glfwMods & GLFW_MOD_SHIFT),
+       bool(m_glfwMods & GLFW_MOD_CONTROL), bool(m_glfwMods & GLFW_MOD_ALT)});
 }
 
 // 2d mouse move callback, left mouse button pans, right mouse zooms
@@ -425,9 +470,10 @@ void Gui::mouseMoveCallback2d(float x, float y)
 // 3d mouse move callback.
 void Gui::mouseMoveCallback3d(float x, float y)
 {
-  m_cameraManipulator.mouseMove(int(x), int(y),
-                                {m_lmb, m_mmb, m_rmb, bool(m_glfwMods & GLFW_MOD_SHIFT),
-                                 bool(m_glfwMods & GLFW_MOD_CONTROL), bool(m_glfwMods & GLFW_MOD_ALT)});
+  m_cameraManipulator.mouseMove(
+      int(x), int(y),
+      {m_lmb, m_mmb, m_rmb, bool(m_glfwMods & GLFW_MOD_SHIFT),
+       bool(m_glfwMods & GLFW_MOD_CONTROL), bool(m_glfwMods & GLFW_MOD_ALT)});
 }
 
 Gui& Gui::getData(GLFWwindow* pWindow)
@@ -481,11 +527,11 @@ void Gui::mouseCallback(GLFWwindow* pWindow, int button, int action, int mods)
       break;
     case 3:
       if(action == GLFW_PRESS)
-        g.m_cam.explicitLod -= 1.0f;
+        g.m_cam.explicitLod -= 1.0F;
       goto updateLodMode;
     case 4:
       if(action == GLFW_PRESS)
-        g.m_cam.explicitLod += 1.0f;
+        g.m_cam.explicitLod += 1.0F;
       goto updateLodMode;
     default:
       break;  // Get rid of warning.
@@ -505,17 +551,19 @@ updateLodMode:
 
 void Gui::cursorPositionCallback(GLFWwindow* pWindow, double x, double y)
 {
-  Gui& g = getData(pWindow);
+  Gui&        g  = getData(pWindow);
+  const float fx = static_cast<float>(x);
+  const float fy = static_cast<float>(y);
   if(g.m_cam.sceneMode == VK_COMPUTE_MIPMAPS_SCENE_MODE_3D)
   {
-    g.mouseMoveCallback3d(float(x), float(y));
+    g.mouseMoveCallback3d(fx, fy);
   }
   else
   {
-    g.mouseMoveCallback2d(float(x), float(y));
+    g.mouseMoveCallback2d(fx, fy);
   }
-  g.m_mouseX = float(x);
-  g.m_mouseY = float(y);
+  g.m_mouseX = fx;
+  g.m_mouseY = fy;
 }
 
 void Gui::charCallbackImpl(unsigned chr)
@@ -546,13 +594,13 @@ void Gui::charCallbackImpl(unsigned chr)
       m_doLogPerformance ^= 1;
       break;
     case 'k':
-      if(m_cam.backgroundBrightness == 0.5f)
+      if(m_cam.backgroundBrightness == 0.5F)
       {
-        m_cam.backgroundBrightness = 0.01f;
+        m_cam.backgroundBrightness = 0.01F;
       }
       else
       {
-        m_cam.backgroundBrightness = 0.5f;
+        m_cam.backgroundBrightness = 0.5F;
       }
       break;
     case 'm':
@@ -608,7 +656,12 @@ void Gui::charCallback(GLFWwindow* pWindow, unsigned chr)
   getData(pWindow).charCallbackImpl(chr);
 }
 
-void Gui::keyCallback(GLFWwindow* pWindow, int key, int scancode, int action, int mods)
+void Gui::keyCallback(
+    GLFWwindow* pWindow,
+    int         key,
+    int         scancode,
+    int         action,
+    int         mods)
 {
   ImGui_ImplGlfw_KeyCallback(pWindow, key, scancode, action, mods);
 }
@@ -622,5 +675,6 @@ void Gui::addCallbacks(GLFWwindow* pWindow)
   glfwSetKeyCallback(pWindow, keyCallback);
 }
 
-const char* Gui::s_openExts = "Image Files|*.png;*.jpg;*.jpeg;*.tga;*.bmp;*.psd;*.gif;*.hdr;*.pic";
+const char* Gui::s_openExts =
+    "Image Files|*.png;*.jpg;*.jpeg;*.tga;*.bmp;*.psd;*.gif;*.hdr;*.pic";
 const char* Gui::s_saveExts = "TGA files|*.TGA";

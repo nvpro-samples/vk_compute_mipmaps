@@ -1,9 +1,10 @@
-// Copyright 2021 NVIDIA CORPORATION
+// Copyright 2021-2024 NVIDIA CORPORATION
 // SPDX-License-Identifier: Apache-2.0
 #ifndef NVPRO_SAMPLES_COMPUTE_MIPMAPS_NVPRO_PYRAMID_DISPATCH_HPP_
 #define NVPRO_SAMPLES_COMPUTE_MIPMAPS_NVPRO_PYRAMID_DISPATCH_HPP_
 
-#include <cassert>
+#include <assert.h>
+#include <stdint.h>
 #include <vulkan/vulkan_core.h>
 
 // Struct for passing the pipelines and associated data for the mipmap
@@ -27,10 +28,10 @@
 // override the default push constant by defining NVPRO_PYRAMID_PUSH_CONSTANT.
 struct NvproPyramidPipelines
 {
-  VkPipeline       generalPipeline;
-  VkPipeline       fastPipeline;
-  VkPipelineLayout layout;
-  uint32_t         pushConstantOffset;
+  VkPipeline       generalPipeline    = VK_NULL_HANDLE;
+  VkPipeline       fastPipeline       = VK_NULL_HANDLE;
+  VkPipelineLayout layout             = VK_NULL_HANDLE;
+  uint32_t         pushConstantOffset = 0;
 };
 
 // Record commands for dispatching the compute shaders in NvproPyramidPipelines
@@ -50,29 +51,30 @@ struct NvproPyramidPipelines
 // * Binding any needed descriptor sets
 // * Setting any needed push constants, except the push constant declared
 //   by NVPRO_PYRAMID_PUSH_CONSTANT (if any)
-inline void nvproCmdPyramidDispatch(VkCommandBuffer       cmdBuf,
-                                    NvproPyramidPipelines pipelines,
-                                    uint32_t              baseWidth,
-                                    uint32_t              baseHeight,
-                                    uint32_t              mipLevels = 0u);
+inline void nvproCmdPyramidDispatch(
+    VkCommandBuffer       cmdBuf,
+    NvproPyramidPipelines pipelines,
+    uint32_t              baseWidth,
+    uint32_t              baseHeight,
+    uint32_t              mipLevels = 0U);
 
 // Struct used for tracking the progress of scheduling mipmap
 // generation commands.
 struct NvproPyramidState
 {
   // Input level for the next dispatch.
-  uint32_t currentLevel;
+  uint32_t currentLevel = 0;
 
   // Levels that remain to be filled, i.e.
   // nvproCmdPyramidDispatch::mipLevels - currentLevel - 1.
   // Will never be 0 when passed to an nvpro_pyramid_dispatcher_t instance.
-  uint32_t remainingLevels;
+  uint32_t remainingLevels = 0;
 
   // Width and height of mip level currentLevel.
-  uint32_t currentX, currentY;
+  uint32_t currentX = 0, currentY = 0;
 };
 
-constexpr uint32_t nvproPyramidInputLevelShift = 5u; // TODO Use consistently
+constexpr uint32_t nvproPyramidInputLevelShift = 5U;  // TODO Use consistently
 
 
 // Callback host function for a pipeline. Attempt to record commands
@@ -94,59 +96,62 @@ constexpr uint32_t nvproPyramidInputLevelShift = 5u; // TODO Use consistently
 // and NVPRO_PYRAMID_LEVEL_COUNT_ macros assume
 //
 // { input level } << nvproPyramidInputLevelShift | { levels filled }
-typedef uint32_t (*nvpro_pyramid_dispatcher_t)(VkCommandBuffer  cmdBuf,
-                                               VkPipelineLayout layout,
-                                               uint32_t   pushConstantOffset,
-                                               VkPipeline pipelineIfNeeded,
-                                               const NvproPyramidState& state);
+using nvpro_pyramid_dispatcher_t = uint32_t (*)(
+    VkCommandBuffer          cmdBuf,
+    VkPipelineLayout         layout,
+    uint32_t                 pushConstantOffset,
+    VkPipeline               pipelineIfNeeded,
+    const NvproPyramidState& state);
 
 // Base implementation function for the typical user-facing
 // nvproCmdPyramidDispatch. Try to use the fastPipeline if possible,
 // then fall back to the general pipeline if not usable.
-inline void
-nvproCmdPyramidDispatch(VkCommandBuffer            cmdBuf,
-                        NvproPyramidPipelines      pipelines,
-                        uint32_t                   baseWidth,
-                        uint32_t                   baseHeight,
-                        uint32_t                   mipLevels,
-                        nvpro_pyramid_dispatcher_t generalDispatcher,
-                        nvpro_pyramid_dispatcher_t fastDispatcher)
+inline void nvproCmdPyramidDispatch(
+    VkCommandBuffer            cmdBuf,
+    NvproPyramidPipelines      pipelines,
+    uint32_t                   baseWidth,
+    uint32_t                   baseHeight,
+    uint32_t                   mipLevels,
+    nvpro_pyramid_dispatcher_t generalDispatcher,
+    nvpro_pyramid_dispatcher_t fastDispatcher)
 {
-  VkMemoryBarrier barrier{
-      VK_STRUCTURE_TYPE_MEMORY_BARRIER, 0,
-      VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT};
-  if (mipLevels == 0)
+  const VkMemoryBarrier barrier{
+      .sType         = VK_STRUCTURE_TYPE_MEMORY_BARRIER,
+      .srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT,
+      .dstAccessMask = VK_ACCESS_SHADER_READ_BIT};
+  if(mipLevels == 0)
   {
-    uint32_t srcWidth = baseWidth, srcHeight = baseHeight;
-    while (srcWidth != 0 || srcHeight != 0)
+    uint32_t srcWidth  = baseWidth;
+    uint32_t srcHeight = baseHeight;
+    while(srcWidth != 0 || srcHeight != 0)
     {
-      srcWidth  >>= 1;
+      srcWidth >>= 1;
       srcHeight >>= 1;
       ++mipLevels;
     }
   }
   NvproPyramidState state;
-  state.currentLevel       = 0u;
-  state.remainingLevels    = mipLevels - 1u;
-  state.currentX           = baseWidth;
-  state.currentY           = baseHeight;
+  state.currentLevel    = 0U;
+  state.remainingLevels = mipLevels - 1U;
+  state.currentX        = baseWidth;
+  state.currentY        = baseHeight;
 
   VkPipeline fastPipelineIfNeeded    = pipelines.fastPipeline;
   VkPipeline generalPipelineIfNeeded = pipelines.generalPipeline;
 
-  while (1)
+  while(true)
   {
     uint32_t levelsDone = 0;
 
     // Try to use the fast pipeline if possible.
-    if (pipelines.fastPipeline)
+    if(pipelines.fastPipeline)
     {
-      levelsDone =
-          fastDispatcher(cmdBuf, pipelines.layout, pipelines.pushConstantOffset,
-                         fastPipelineIfNeeded, state);
+      levelsDone = fastDispatcher(
+          cmdBuf, pipelines.layout, pipelines.pushConstantOffset,
+          fastPipelineIfNeeded, state);
     }
 
-    if (levelsDone != 0)
+    if(levelsDone != 0)
     {
       fastPipelineIfNeeded    = VK_NULL_HANDLE;
       generalPipelineIfNeeded = pipelines.generalPipeline;
@@ -154,9 +159,9 @@ nvproCmdPyramidDispatch(VkCommandBuffer            cmdBuf,
     else
     {
       // Otherwise fall back on general pipeline.
-      levelsDone = generalDispatcher(cmdBuf, pipelines.layout,
-                                      pipelines.pushConstantOffset,
-                                      generalPipelineIfNeeded, state);
+      levelsDone = generalDispatcher(
+          cmdBuf, pipelines.layout, pipelines.pushConstantOffset,
+          generalPipelineIfNeeded, state);
 
       fastPipelineIfNeeded    = pipelines.fastPipeline;
       generalPipelineIfNeeded = VK_NULL_HANDLE;
@@ -168,16 +173,17 @@ nvproCmdPyramidDispatch(VkCommandBuffer            cmdBuf,
     state.currentLevel += levelsDone;
     state.remainingLevels -= levelsDone;
     state.currentX >>= levelsDone;
-    state.currentX = state.currentX ? state.currentX : 1u;
+    state.currentX = (state.currentX != 0) ? state.currentX : 1U;
     state.currentY >>= levelsDone;
-    state.currentY = state.currentY ? state.currentY : 1u;
+    state.currentY = (state.currentY != 0) ? state.currentY : 1U;
 
     // Put barriers only between dispatches.
-    if (state.remainingLevels == 0u) break;
-    vkCmdPipelineBarrier(cmdBuf,
-      VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-      VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-      0, 1, &barrier, 0, 0, 0, 0);
+    if(state.remainingLevels == 0U)
+      break;
+    vkCmdPipelineBarrier(
+        cmdBuf, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 1, &barrier, 0, nullptr, 0,
+        nullptr);
   }
 }
 
@@ -187,106 +193,113 @@ nvproCmdPyramidDispatch(VkCommandBuffer            cmdBuf,
 //
 // Note: this function is referenced by name in ComputeMipmapPipeline::cmdBindGenerate
 template <uint32_t DivisibilityRequirement = 4, uint32_t MaxLevels = 6>
-static uint32_t
-nvproPyramidDefaultFastDispatcher(VkCommandBuffer          cmdBuf,
-                                  VkPipelineLayout         layout,
-                                  uint32_t                 pushConstantOffset,
-                                  VkPipeline               pipelineIfNeeded,
-                                  const NvproPyramidState& state)
+static uint32_t nvproPyramidDefaultFastDispatcher(
+    VkCommandBuffer          cmdBuf,
+    VkPipelineLayout         layout,
+    uint32_t                 pushConstantOffset,
+    VkPipeline               pipelineIfNeeded,
+    const NvproPyramidState& state)
 {
   // For maybequad pipeline.
-  static_assert(DivisibilityRequirement > 0 && DivisibilityRequirement % 2 == 0,
-                "Can only handle even sizes.");
-  bool success = state.currentX % DivisibilityRequirement == 0u
-                 && state.currentY % DivisibilityRequirement == 0u;
-  if (success)
+  static_assert(
+      DivisibilityRequirement > 0 && DivisibilityRequirement % 2 == 0,
+      "Can only handle even sizes.");
+  const bool success = state.currentX % DivisibilityRequirement == 0U
+                       && state.currentY % DivisibilityRequirement == 0U;
+  if(success)
   {
-    if (pipelineIfNeeded)
+    if(pipelineIfNeeded)
     {
-      vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE,
-                        pipelineIfNeeded);
+      vkCmdBindPipeline(
+          cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineIfNeeded);
     }
 
     // Choose the number of levels to fill.
     static_assert(MaxLevels <= 6, "Can only handle up to 6 levels");
-    uint32_t x = state.currentX, y = state.currentY;
-    uint32_t levels = 0u;
-    while (x % 2u == 0u && y % 2u == 0u && levels < state.remainingLevels
-           && levels < MaxLevels)
+    uint32_t x      = state.currentX;
+    uint32_t y      = state.currentY;
+    uint32_t levels = 0U;
+    while(x % 2U == 0U && y % 2U == 0U && levels < state.remainingLevels
+          && levels < MaxLevels)
     {
-      x /= 2u;
-      y /= 2u;
+      x /= 2U;
+      y /= 2U;
       levels++;
     }
-    uint32_t srcLevel = state.currentLevel;
-    uint32_t pc       = srcLevel << nvproPyramidInputLevelShift | levels;
-    vkCmdPushConstants(cmdBuf, layout, VK_SHADER_STAGE_COMPUTE_BIT,
-                       pushConstantOffset, sizeof pc, &pc);
+    const uint32_t srcLevel = state.currentLevel;
+    uint32_t       pc       = srcLevel << nvproPyramidInputLevelShift | levels;
+    vkCmdPushConstants(
+        cmdBuf, layout, VK_SHADER_STAGE_COMPUTE_BIT, pushConstantOffset,
+        sizeof pc, &pc);
     // Each workgroup handles up to 4096 input samples if levels > 5; 1024 otherwise.
-    uint32_t shift   = levels > 5 ? 12u : 10u;
-    uint32_t mask    = levels > 5 ? 4095u : 1023u;
-    uint32_t samples = state.currentX * state.currentY;
-    vkCmdDispatch(cmdBuf, (samples + mask) >> shift, 1u, 1u);
+    const uint32_t shift   = levels > 5 ? 12U : 10U;
+    const uint32_t mask    = levels > 5 ? 4095U : 1023U;
+    const uint32_t samples = state.currentX * state.currentY;
+    vkCmdDispatch(cmdBuf, (samples + mask) >> shift, 1U, 1U);
     return levels;
   }
-  return 0u;
+  return 0U;
 }
 
 
 // nvpro_pyramid_dispatcher_t implementation for nvpro_pyramid.glsl
 // shaders with NVPRO_PYRAMID_IS_FAST_PIPELINE == 0
-inline uint32_t
-nvproPyramidDefaultGeneralDispatcher(VkCommandBuffer  cmdBuf,
-                                     VkPipelineLayout layout,
-                                     uint32_t         pushConstantOffset,
-                                     VkPipeline       pipelineIfNeeded,
-                                     const NvproPyramidState& state)
+inline uint32_t nvproPyramidDefaultGeneralDispatcher(
+    VkCommandBuffer          cmdBuf,
+    VkPipelineLayout         layout,
+    uint32_t                 pushConstantOffset,
+    VkPipeline               pipelineIfNeeded,
+    const NvproPyramidState& state)
 {
   // Use py2_4_8_8 pipeline parameters.
-  constexpr uint32_t MaxLevels = 2, Warps = 4, TileWidth = 8, TileHeight = 8;
+  constexpr uint32_t MaxLevels  = 2;
+  constexpr uint32_t Warps      = 4;
+  constexpr uint32_t TileWidth  = 8;
+  constexpr uint32_t TileHeight = 8;
 
-  if (pipelineIfNeeded)
+  if(pipelineIfNeeded)
   {
-    vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE,
-                      pipelineIfNeeded);
+    vkCmdBindPipeline(cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineIfNeeded);
   }
-  static_assert(MaxLevels <= 2u && MaxLevels != 0, "can do 1 or 2 levels");
-  uint32_t levels =
+  static_assert(MaxLevels <= 2U && MaxLevels != 0, "can do 1 or 2 levels");
+  const uint32_t levels =
       state.remainingLevels >= MaxLevels ? MaxLevels : state.remainingLevels;
-  uint32_t srcLevel = state.currentLevel;
-  uint32_t pc       = srcLevel << nvproPyramidInputLevelShift | levels;
-  vkCmdPushConstants(cmdBuf, layout, VK_SHADER_STAGE_COMPUTE_BIT,
-                     pushConstantOffset, sizeof pc, &pc);
+  const uint32_t srcLevel = state.currentLevel;
+  const uint32_t pc       = srcLevel << nvproPyramidInputLevelShift | levels;
+  vkCmdPushConstants(
+      cmdBuf, layout, VK_SHADER_STAGE_COMPUTE_BIT, pushConstantOffset,
+      sizeof pc, &pc);
   uint32_t dstWidth  = state.currentX >> levels;
-  dstWidth           = dstWidth ? dstWidth : 1u;
+  dstWidth           = (dstWidth != 0) ? dstWidth : 1U;
   uint32_t dstHeight = state.currentY >> levels;
-  dstHeight          = dstHeight ? dstHeight : 1u;
+  dstHeight          = (dstHeight != 0) ? dstHeight : 1U;
 
-  if (levels == 1u)
+  if(levels == 1U)
   {
     // Each thread writes one sample.
-    uint32_t samples = dstWidth * dstHeight;
-    uint32_t threads = Warps * 32u;
-    vkCmdDispatch(cmdBuf, (samples + (threads - 1u)) / threads, 1u, 1u);
+    const uint32_t samples = dstWidth * dstHeight;
+    const uint32_t threads = Warps * 32U;
+    vkCmdDispatch(cmdBuf, (samples + (threads - 1U)) / threads, 1U, 1U);
   }
   else
   {
     // Each workgroup handles a tile.
-    uint32_t horizontalTiles = (dstWidth + (TileWidth - 1)) / TileWidth;
-    uint32_t verticalTiles   = (dstHeight + (TileHeight - 1)) / TileHeight;
-    vkCmdDispatch(cmdBuf, horizontalTiles * verticalTiles, 1u, 1u);
+    const uint32_t horizontalTiles = (dstWidth + (TileWidth - 1)) / TileWidth;
+    const uint32_t verticalTiles = (dstHeight + (TileHeight - 1)) / TileHeight;
+    vkCmdDispatch(cmdBuf, horizontalTiles * verticalTiles, 1U, 1U);
   }
   return levels;
 }
 
-inline void nvproCmdPyramidDispatch(VkCommandBuffer       cmdBuf,
-                                    NvproPyramidPipelines pipelines,
-                                    uint32_t              baseWidth,
-                                    uint32_t              baseHeight,
-                                    uint32_t              mipLevels)
+inline void nvproCmdPyramidDispatch(
+    VkCommandBuffer       cmdBuf,
+    NvproPyramidPipelines pipelines,
+    uint32_t              baseWidth,
+    uint32_t              baseHeight,
+    uint32_t              mipLevels)
 {
-  nvproCmdPyramidDispatch(cmdBuf, pipelines, baseWidth, baseHeight, mipLevels,
-                          nvproPyramidDefaultGeneralDispatcher,
-                          nvproPyramidDefaultFastDispatcher);
+  nvproCmdPyramidDispatch(
+      cmdBuf, pipelines, baseWidth, baseHeight, mipLevels,
+      nvproPyramidDefaultGeneralDispatcher, nvproPyramidDefaultFastDispatcher);
 }
 #endif
